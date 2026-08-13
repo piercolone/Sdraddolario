@@ -1,0 +1,25 @@
+{
+  "name": "ricettario",
+  "displayName": "Ricettario",
+  "version": "1.0.0",
+  "description": "Ricettario classico e Bimby (Cordova WebView, offline).",
+  "license": "MIT",
+  "dependencies": {
+    "cordova-plugin-file": "^8.1.0",
+    "cordova-plugin-x-socialsharing": "^6.0.4",
+    "cordova-plugin-insomnia": "^4.3.0"
+  },
+  "devDependencies": {
+    "cordova-android": "^14.0.0"
+  },
+  "cordova": {
+    "platforms": [
+      "android"
+    ],
+    "plugins": {
+      "cordova-plugin-file": {},
+      "cordova-plugin-x-socialsharing": {},
+      "cordova-plugin-insomnia": {}
+    }
+  }
+}
