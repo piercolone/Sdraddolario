@@ -1,43 +1,40 @@
-name: Build APK
+name: Build Android APK
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ "main", "master" ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - name: JDK 17
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '17'
-      - name: Node.js 20
+      - name: Checkout del codice
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Android SDK
-        uses: android-actions/setup-android@v4
-      - name: Componenti SDK
-        run: |
-          yes | sdkmanager --licenses || true
-          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-      - name: Installa Cordova
-        run: npm install -g cordova
-      - name: Aggiungi Android (versione stabile 13)
-        run: cordova platform add android@13.0.0
-      - name: Forza appcompat 1.6.1
-        run: |
-          mkdir -p platforms/android/app
-          printf "configurations.all {\n    resolutionStrategy {\n        force 'androidx.appcompat:appcompat:1.6.1'\n    }\n}\n" > platforms/android/app/build-extras.gradle
-      - name: Build APK
-        run: cordova build android
-      - name: Carica l'APK
-        uses: actions/upload-artifact@v4
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
         with:
-          name: ricettario-apk
-          path: platforms/android/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
+          distribution: 'temurin'
+          java-version: '17' # Importante: Java 17 è l'ambiente ideale per Cordova Android 10+ / Gradle 8
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Installazione Dipendenze Cordova
+        run: |
+          npm install -g cordova
+          npm ci || npm install
+
+      - name: Clean e Build Cordova APK
+        run: |
+          # Pulisce la piattaforma per evitare conflitti di cache
+          npx cordova platform rm android --nosave || true
+          npx cordova platform add android
+          npx cordova build android --debug
