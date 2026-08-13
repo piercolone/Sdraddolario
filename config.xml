@@ -15,7 +15,8 @@
     <preference name="Fullscreen" value="false" />
     <preference name="BackgroundColor" value="#FFFAF6EF" />
     <preference name="android-minSdkVersion" value="24" />
-    <preference name="android-targetSdkVersion" value="34" />
+    <preference name="android-targetSdkVersion" value="35" />
+    <preference name="android-compileSdkVersion" value="35" />
     <preference name="AndroidPersistentFileLocation" value="Internal" />
 
     <!-- Plugin per scrivere il file di export e aprire il menu Condividi -->
