@@ -22,7 +22,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17' # Importante: Java 17 è l'ambiente ideale per Cordova Android 10+ / Gradle 8
+          java-version: '17'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -34,15 +34,14 @@ jobs:
           npm install -g cordova
           npm ci || npm install
 
-      - name: Clean e Build Cordova APK
+      - name: Build Cordova APK
         run: |
-          # Pulisce la piattaforma per evitare conflitti di cache
-          npx cordova platform rm android --nosave || true
-          npx cordova platform add android
+          rm -rf platforms/
+          npx cordova platform add android@14.0.1
           npx cordova build android --debug
 
-       - name: Carica APK come Artifact
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug-apk
+          name: Ricettario-Debug-APK
           path: platforms/android/app/build/outputs/apk/debug/app-debug.apk
