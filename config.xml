@@ -13,7 +13,7 @@
 
     <preference name="Orientation" value="default" />
     <preference name="Fullscreen" value="false" />
-    <preference name="BackgroundColor" value="0xFFFAF6EF" />
+    <preference name="BackgroundColor" value="#FFFAF6EF" />
     <preference name="android-minSdkVersion" value="24" />
     <preference name="android-targetSdkVersion" value="34" />
     <preference name="AndroidPersistentFileLocation" value="Internal" />
