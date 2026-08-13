@@ -24,17 +24,15 @@ jobs:
       - name: Componenti SDK
         run: |
           yes | sdkmanager --licenses || true
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
       - name: Installa Cordova
         run: npm install -g cordova
-      - name: Aggiungi Android
-        run: cordova platform add android
-      - name: Forza appcompat 1.6.1 (evita l'errore di risorse)
+      - name: Aggiungi Android (versione stabile 13)
+        run: cordova platform add android@13.0.0
+      - name: Forza appcompat 1.6.1
         run: |
           mkdir -p platforms/android/app
           printf "configurations.all {\n    resolutionStrategy {\n        force 'androidx.appcompat:appcompat:1.6.1'\n    }\n}\n" > platforms/android/app/build-extras.gradle
-          echo "--- build-extras.gradle ---"
-          cat platforms/android/app/build-extras.gradle
       - name: Build APK
         run: cordova build android
       - name: Carica l'APK
