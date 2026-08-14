@@ -24,6 +24,27 @@
     --shadow:0 1px 0 var(--line), 0 8px 24px -16px rgba(43,38,34,.35);
     --maxw:1100px;
   }
+  body.theme-dark{
+    --paper:#181511;        /* fondo scuro caldo */
+    --surface:#221E19;
+    --ink:#F1EADD;          /* testo chiaro */
+    --muted:#A79D8C;
+    --line:#332E27;
+    --line-strong:#463F36;
+    --primary:#E06A54;      /* rosso più luminoso su scuro */
+    --primary-soft:#3A241F;
+    --bimby:#3FB0A0;
+    --bimby-soft:#12332F;
+    --gold:#E0A93E;
+    --shadow:0 1px 0 var(--line), 0 8px 24px -16px rgba(0,0,0,.6);
+    color-scheme:dark;
+  }
+  body.theme-dark .brand .mark{color:#fff}
+  body.theme-dark img,body.theme-dark .thumb.photo{filter:none}
+  body.theme-dark header.bar{background:rgba(24,21,17,.88)}
+  body.theme-dark .card .thumb{background:linear-gradient(135deg,#2b2521,#221d18)}
+  body.theme-dark .card.bimby .thumb{background:linear-gradient(135deg,#123230,#0f2a27)}
+  body.theme-dark .dg-main,body.theme-dark .dg-thumb,body.theme-dark .foto-item{background-color:#2b2521}
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   body{
@@ -64,11 +85,11 @@
   .brand b{font-family:Fraunces;font-weight:600;font-size:21px;letter-spacing:.2px}
   .brand small{display:block;color:var(--muted);font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-family:"Space Mono",monospace}
   .bar-spacer{flex:1 1 auto}
-  .nav{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:3px;max-width:100%}
+  .nav{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:3px;max-width:100%}
   .nav button{
     border:0;background:transparent;color:var(--muted);
-    padding:7px 14px;border-radius:8px;font-weight:600;font-size:14px;
-    min-width:0;white-space:nowrap;
+    padding:7px 12px;border-radius:8px;font-weight:600;font-size:14px;
+    white-space:nowrap;
   }
   .nav button.active{background:var(--ink);color:var(--paper)}
 
@@ -391,6 +412,25 @@
   .sr-count{font-family:"Space Mono",monospace;font-size:12px;color:var(--primary);flex:0 0 auto}
   .linklike{border:0;background:transparent;color:var(--ink);font:inherit;font-weight:600;text-align:left;cursor:pointer;padding:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .linklike:hover{color:var(--primary);text-decoration:underline}
+
+  /* --- opzioni / interruttori --- */
+  .opt-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .opt-row:last-child{border-bottom:0}
+  .opt-txt{flex:1 1 auto;min-width:0}
+  .opt-lbl{font-weight:600;font-size:15px}
+  .opt-desc{color:var(--muted);font-size:13px;margin-top:2px}
+  .opt-row.is-disabled{opacity:.55}
+  .switch{flex:0 0 auto;width:48px;height:28px;border-radius:999px;border:1px solid var(--line-strong);
+    background:var(--paper);position:relative;cursor:pointer;transition:.18s;padding:0}
+  .switch .knob{position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;
+    background:var(--surface);border:1px solid var(--line-strong);transition:.18s}
+  .switch.on{background:var(--primary);border-color:var(--primary)}
+  .switch.on .knob{left:22px;background:#fff;border-color:#fff}
+  .switch:disabled{cursor:not-allowed}
+  .opt-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
+  .info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:16px}
+  .info-list{margin:6px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:7px}
+  .info-list li{font-size:14.5px;line-height:1.45}
   .share-row.is-done{opacity:.5}
   .share-row.is-done .sr-name{text-decoration:line-through}
   .share-row input[type=checkbox]{accent-color:var(--primary)}
@@ -500,11 +540,11 @@
   @media (max-width:600px){
     .bar-in{flex-wrap:wrap;gap:10px}
     .brand small{display:none}
-    .nav{order:3;width:100%}
-    .nav button{flex:1 1 0;min-width:0;padding:8px 4px;font-size:13px;overflow:hidden;text-overflow:ellipsis}
+    .nav{order:3;width:100%;justify-content:flex-start}
+    .nav button{padding:8px 11px;font-size:13px}
   }
   @media (max-width:360px){
-    .nav button{font-size:12px;letter-spacing:-.2px}
+    .nav button{font-size:12px;padding:7px 9px}
   }
 </style>
 
@@ -517,10 +557,12 @@
     <div class="bar-spacer"></div>
     <nav class="nav">
       <button id="navBrowse" class="active" onclick="App.go('browse')">Ricette</button>
-      <button id="navPiano" onclick="App.openPiano()">Piano</button>
-      <button id="navSpesa" onclick="App.openSpesa()">Spesa</button>
-      <button id="navShare" onclick="App.openShare('export')">Scambia</button>
       <button id="navAdmin" onclick="App.newRecipe()">Gestione</button>
+      <button id="navSpesa" onclick="App.openSpesa()">Spesa</button>
+      <button id="navPiano" onclick="App.openPiano()">Piano</button>
+      <button id="navShare" onclick="App.openShare('export')">Scambia</button>
+      <button id="navOpzioni" onclick="App.go('opzioni')">Opzioni</button>
+      <button id="navInfo" onclick="App.go('info')">Info</button>
     </nav>
   </div>
 </header>
@@ -881,7 +923,7 @@ const App = {
   spesa: [],           // lista della spesa: {n,u,q,checked,manual}
   plan: null,          // pianificazione settimanale: {lun:{colazione:[id],pranzo:[],cena:[]},...}
   planSpesa: [],       // lista della spesa generata dai pasti pianificati (separata)
-  settings:{autoLeggi:false}, // preferenze (es. lettura automatica in cucina)
+  settings:{autoLeggi:false, tema:"chiaro"}, // preferenze (lettura automatica, tema)
   spesaSel: null,      // Map id -> porzioni, per comporre la lista
   cookActive:false,    // modalità cucina attiva
   cookStep:0,          // passaggio corrente in modalità cucina
@@ -901,7 +943,8 @@ const App = {
     try{ this.plan = JSON.parse(await Store.get(PIANO_KEY)) || null; }catch(e){ this.plan=null; }
     try{ this.planSpesa = JSON.parse(await Store.get(PIANO_SPESA_KEY)) || []; }catch(e){ this.planSpesa=[]; }
     this.ensurePlan();
-    try{ this.settings = Object.assign({autoLeggi:false}, JSON.parse(await Store.get(IMPOST_KEY))||{}); }catch(e){ this.settings={autoLeggi:false}; }
+    try{ this.settings = Object.assign({autoLeggi:false, tema:"chiaro"}, JSON.parse(await Store.get(IMPOST_KEY))||{}); }catch(e){ this.settings={autoLeggi:false, tema:"chiaro"}; }
+    applyTheme();
     Speech.init();
     await this.migrate();     // versionamento dati + migrazioni automatiche
     this.go("browse");
@@ -959,6 +1002,8 @@ const App = {
     document.getElementById("navShare").classList.toggle("active", view==="share");
     document.getElementById("navSpesa").classList.toggle("active", view==="spesa");
     document.getElementById("navPiano").classList.toggle("active", view==="piano");
+    document.getElementById("navOpzioni").classList.toggle("active", view==="opzioni");
+    document.getElementById("navInfo").classList.toggle("active", view==="info");
     if(view==="browse") renderBrowse();
     else if(view==="detail") renderDetail();
     else if(view==="admin") renderAdmin();
@@ -966,6 +1011,8 @@ const App = {
     else if(view==="spesa") renderSpesa();
     else if(view==="piano") renderPiano();
     else if(view==="stats") renderStats();
+    else if(view==="opzioni") renderOpzioni();
+    else if(view==="info") renderInfo();
     window.scrollTo({top:0,behavior:"instant"in window?"instant":"auto"});
   },
 
@@ -2275,7 +2322,103 @@ function renderStats(){
   `;
 }
 
-/* ===================== Scambio ricette (export/import) ===================== */
+/* ===================== Opzioni ===================== */
+function applyTheme(){
+  document.body.classList.toggle("theme-dark", App.settings.tema==="scuro");
+}
+async function setTema(scuro){
+  App.settings.tema = scuro ? "scuro" : "chiaro";
+  applyTheme();
+  await App.saveSettings();
+  if(App.view==="opzioni") renderOpzioni();
+}
+async function setAutoLeggiOpt(on){
+  App.settings.autoLeggi = !!on;
+  await App.saveSettings();
+  if(App.view==="opzioni") renderOpzioni();
+}
+function switchRow(id, label, desc, on, handler, disabled){
+  return `<div class="opt-row ${disabled?'is-disabled':''}">
+    <div class="opt-txt"><div class="opt-lbl">${label}</div><div class="opt-desc">${desc}</div></div>
+    <button class="switch ${on?'on':''}" role="switch" aria-checked="${on?'true':'false'}" ${disabled?'disabled':''} onclick="${handler}"><span class="knob"></span></button>
+  </div>`;
+}
+function renderOpzioni(){
+  const app=document.getElementById("app");
+  const dark = App.settings.tema==="scuro";
+  const voce = Speech.supported();
+  app.innerHTML=`
+    <button class="back no-print" onclick="App.go('browse')">${I.back} Torna al ricettario</button>
+    <h1 style="font-size:30px;margin-bottom:4px">Opzioni</h1>
+    <p class="lead" style="margin-top:0">Le preferenze restano su questo dispositivo.</p>
+
+    <div class="panel">
+      <h2>Aspetto</h2>
+      ${switchRow("tema","Modalità notturna","Tema scuro, più riposante di sera e con meno consumo su schermi OLED.",dark,"setTema(!("+dark+"))")}
+    </div>
+
+    <div class="panel">
+      <h2>Modalità cucina</h2>
+      ${switchRow("autoleggi","Lettura automatica dei passaggi","Legge da solo ogni nuovo passaggio in modalità cucina."+(voce?"":" (non disponibile su questo dispositivo)"),App.settings.autoLeggi,"setAutoLeggiOpt(!"+App.settings.autoLeggi+")", !voce)}
+    </div>
+
+    <div class="panel">
+      <h2>Dati</h2>
+      <div class="opt-actions">
+        <button class="btn" onclick="App.openShare('export')">↔ Esporta / importa ricette</button>
+        <button class="btn" onclick="App.go('stats')">📊 Statistiche d'uso</button>
+      </div>
+      <p class="hint" style="margin-top:10px">Le ricette restano sul dispositivo. Esporta ogni tanto un backup dalla sezione Scambia.</p>
+    </div>
+  `;
+}
+
+/* ===================== Info ===================== */
+function renderInfo(){
+  const app=document.getElementById("app");
+  const gruppi=[
+    ["Ricette", [
+      "Ricette classiche e Bimby, con parametri per passaggio (tempo, temperatura, velocità, antiorario)",
+      "Scalatura delle porzioni con arrotondamento intelligente delle dosi",
+      "Salva come variante, duplica ricetta, riordino dei passaggi",
+      "Foto delle ricette (copertina e galleria), con compressione automatica",
+      "Preferiti, recenti, etichette e categorie con filtri",
+      "Note personali e valutazione a stelle",
+    ]],
+    ["Ricerca e modifica", [
+      "Ricerca intelligente: tollera accenti mancanti e piccoli refusi, cerca anche in note, descrizione e passaggi",
+      "Autosalvataggio della bozza mentre scrivi, con ripristino",
+      "Annulla / Ripeti nell'editor (anche Ctrl+Z / Ctrl+Y)",
+    ]],
+    ["In cucina", [
+      "Modalità cucina a schermo intero, un passaggio alla volta",
+      "Schermo sempre acceso mentre cucini",
+      "Lettura vocale dei passaggi, con modalità automatica",
+    ]],
+    ["Organizzazione", [
+      "Lista della spesa con somma degli ingredienti uguali",
+      "Pianificazione pasti settimanale (colazione, pranzo, cena) con lista della spesa dedicata",
+      "Statistiche d'uso del ricettario",
+    ]],
+    ["Scambio e backup", [
+      "Esporta/importa ricette in JSON, con rilevamento dei doppioni e foto opzionali",
+      "Tutto offline: i dati restano sul dispositivo (nessun account, nessun cloud)",
+    ]],
+  ];
+  app.innerHTML=`
+    <button class="back no-print" onclick="App.go('browse')">${I.back} Torna al ricettario</button>
+    <h1 style="font-size:30px;margin-bottom:4px">Info</h1>
+    <p class="lead" style="margin-top:0">Tutto quello che l'app sa fare. Funziona offline, senza account.</p>
+    <div class="info-grid">
+      ${gruppi.map(([tit,voci])=>`
+        <div class="panel">
+          <h2>${tit}</h2>
+          <ul class="info-list">${voci.map(v=>`<li>${v}</li>`).join("")}</ul>
+        </div>`).join("")}
+    </div>
+    <p class="hint" style="margin-top:18px;text-align:center">Ricettario · app personale offline · classico &amp; Bimby</p>
+  `;
+}
 function normName(s){ return stripAccents(s).trim(); } // minuscolo + senza accenti: "Tiramisù" == "Tiramisu"
 
 function renderShare(){
