@@ -3,34 +3,41 @@ on:
   push:
     branches: [ "main", "master" ]
   workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout del codice
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
+
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
+
       - name: Setup Java JDK
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
+
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v4
+        uses: android-actions/setup-android@v3
         with:
           packages: 'platforms;android-35 build-tools;35.0.0'
+
       - name: Installazione Dipendenze Cordova
         run: |
           npm install -g cordova
           npm ci || npm install
+
       - name: Build Cordova APK
         run: |
           rm -rf platforms/
           npx cordova platform add android@14.0.1
           npx cordova build android --debug
+
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
