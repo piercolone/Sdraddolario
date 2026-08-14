@@ -350,6 +350,47 @@
   .sa-row .btn{flex:0 0 auto}
   @media (max-width:560px){ .sa-row{flex-wrap:wrap} .sa-row #spPort{flex:0 0 80px} .sa-row select{flex:1 1 100%} }
   .spesa-list .sp-q{font-family:"Space Mono",monospace;color:var(--primary)}
+
+  /* --- pianificazione pasti --- */
+  .plan-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;margin:18px 0}
+  .plan-day{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);padding:12px 14px}
+  .pd-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;border-bottom:1px solid var(--line);padding-bottom:8px}
+  .pd-head h3{font-size:18px}
+  .plan-slot{display:flex;gap:10px;padding:7px 0;align-items:flex-start}
+  .plan-slot+.plan-slot{border-top:1px dashed var(--line)}
+  .ps-lbl{flex:0 0 78px;font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding-top:6px}
+  .ps-body{flex:1 1 auto;display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0}
+  .ps-empty{color:var(--line-strong)}
+  .plan-chip{display:inline-flex;align-items:center;gap:4px;background:var(--primary-soft);border:1px solid var(--line);border-radius:999px;padding:2px 4px 2px 10px;max-width:100%}
+  .pc-name{border:0;background:transparent;color:var(--ink);font-weight:600;font-size:13px;cursor:pointer;padding:2px 0;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pc-del{border:0;background:transparent;color:var(--muted);width:20px;height:20px;border-radius:50%;display:grid;place-items:center;cursor:pointer;line-height:0}
+  .pc-del:hover{background:var(--primary);color:#fff}
+  .pc-del svg{width:12px;height:12px}
+  .plan-add{border:1px dashed var(--line-strong);border-radius:999px;background:transparent;color:var(--muted);font:inherit;font-size:12.5px;font-weight:600;padding:3px 8px;cursor:pointer;max-width:130px}
+  .plan-actions{display:flex;flex-wrap:wrap;gap:10px;margin:6px 0 22px}
+  .plan-spesa{margin-top:8px}
+
+  /* --- statistiche --- */
+  .stat-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:18px 0}
+  .stat-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;text-align:center}
+  .sc-num{font-family:Fraunces,serif;font-weight:600;font-size:30px;line-height:1;color:var(--primary)}
+  .stat-card:nth-child(3) .sc-num{font-size:24px}
+  .sc-lbl{margin-top:6px;font-size:12px;color:var(--muted);font-family:"Space Mono",monospace;letter-spacing:.04em;text-transform:uppercase}
+  .stat-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:16px}
+  .stat-bars{display:flex;flex-direction:column;gap:11px;margin-top:6px}
+  .stat-bar .sb-top{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;margin-bottom:4px}
+  .sb-lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sb-val{color:var(--muted);font-family:"Space Mono",monospace;font-size:12px;flex:0 0 auto}
+  .sb-track{height:9px;border-radius:6px;background:var(--paper);border:1px solid var(--line);overflow:hidden}
+  .sb-fill{height:100%;background:linear-gradient(90deg,var(--primary),#c8621e);border-radius:6px}
+  .stat-rank,.stat-list{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:2px}
+  .stat-rank li,.stat-list li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
+  .stat-rank li:last-child,.stat-list li:last-child{border-bottom:0}
+  .stat-rank{counter-reset:rk}
+  .stat-rank li::before{counter-increment:rk;content:counter(rk);font-family:"Space Mono",monospace;font-size:12px;color:var(--muted);flex:0 0 18px}
+  .sr-count{font-family:"Space Mono",monospace;font-size:12px;color:var(--primary);flex:0 0 auto}
+  .linklike{border:0;background:transparent;color:var(--ink);font:inherit;font-weight:600;text-align:left;cursor:pointer;padding:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .linklike:hover{color:var(--primary);text-decoration:underline}
   .share-row.is-done{opacity:.5}
   .share-row.is-done .sr-name{text-decoration:line-through}
   .share-row input[type=checkbox]{accent-color:var(--primary)}
@@ -475,10 +516,11 @@
     </div>
     <div class="bar-spacer"></div>
     <nav class="nav">
-      <button id="navBrowse" class="active" onclick="App.go('browse')">Ricettario</button>
-      <button id="navAdmin" onclick="App.newRecipe()">Gestione</button>
+      <button id="navBrowse" class="active" onclick="App.go('browse')">Ricette</button>
+      <button id="navPiano" onclick="App.openPiano()">Piano</button>
       <button id="navSpesa" onclick="App.openSpesa()">Spesa</button>
       <button id="navShare" onclick="App.openShare('export')">Scambia</button>
+      <button id="navAdmin" onclick="App.newRecipe()">Gestione</button>
     </nav>
   </div>
 </header>
@@ -498,6 +540,10 @@
 const DATA_KEY = "ricettario_v1";
 const RECENT_KEY = "ricettario_recenti_v1";
 const SPESA_KEY  = "ricettario_spesa_v1";
+const PIANO_KEY  = "ricettario_piano_v1";
+const PIANO_SPESA_KEY = "ricettario_piano_spesa_v1";
+const GIORNI=[["lun","Lunedì"],["mar","Martedì"],["mer","Mercoledì"],["gio","Giovedì"],["ven","Venerdì"],["sab","Sabato"],["dom","Domenica"]];
+const PASTI=[["colazione","Colazione"],["pranzo","Pranzo"],["cena","Cena"]];
 const BOZZA_KEY  = "ricettario_bozza_v1";
 const IMPOST_KEY = "ricettario_impostazioni_v1";
 const SCHEMA_KEY = "ricettario_schema_v1";
@@ -833,6 +879,8 @@ const App = {
   importStaging: [],   // ricette in attesa di import: {recipe,status,checked}
   recents: [],         // id delle ricette aperte di recente (più recente per prima)
   spesa: [],           // lista della spesa: {n,u,q,checked,manual}
+  plan: null,          // pianificazione settimanale: {lun:{colazione:[id],pranzo:[],cena:[]},...}
+  planSpesa: [],       // lista della spesa generata dai pasti pianificati (separata)
   settings:{autoLeggi:false}, // preferenze (es. lettura automatica in cucina)
   spesaSel: null,      // Map id -> porzioni, per comporre la lista
   cookActive:false,    // modalità cucina attiva
@@ -850,6 +898,9 @@ const App = {
     else { try{ this.recipes = JSON.parse(data); }catch(e){ warn("lettura ricette",e); this.recipes = seed(); } }
     try{ this.recents = JSON.parse(await Store.get(RECENT_KEY)) || []; }catch(e){ this.recents=[]; }
     try{ this.spesa = JSON.parse(await Store.get(SPESA_KEY)) || []; }catch(e){ this.spesa=[]; }
+    try{ this.plan = JSON.parse(await Store.get(PIANO_KEY)) || null; }catch(e){ this.plan=null; }
+    try{ this.planSpesa = JSON.parse(await Store.get(PIANO_SPESA_KEY)) || []; }catch(e){ this.planSpesa=[]; }
+    this.ensurePlan();
     try{ this.settings = Object.assign({autoLeggi:false}, JSON.parse(await Store.get(IMPOST_KEY))||{}); }catch(e){ this.settings={autoLeggi:false}; }
     Speech.init();
     await this.migrate();     // versionamento dati + migrazioni automatiche
@@ -878,12 +929,23 @@ const App = {
       if(typeof r.note!=="string"){ r.note=""; changed=true; }      // note personali
       if(typeof r.rating!=="number"){ r.rating=0; changed=true; }   // valutazione
       if(!Array.isArray(r.foto)){ r.foto=[]; changed=true; }        // foto (id in IndexedDB)
+      if(typeof r.aperture!=="number"){ r.aperture=0; changed=true; } // n. aperture (personale)
     });
     if(changed) this.save();
   },
   async save(){ await Store.set(DATA_KEY, JSON.stringify(this.recipes)); },
   async saveRecents(){ await Store.set(RECENT_KEY, JSON.stringify(this.recents)); },
   async saveSpesa(){ await Store.set(SPESA_KEY, JSON.stringify(this.spesa)); },
+  async savePlan(){ await Store.set(PIANO_KEY, JSON.stringify(this.plan)); },
+  async savePlanSpesa(){ await Store.set(PIANO_SPESA_KEY, JSON.stringify(this.planSpesa)); },
+  ensurePlan(){ // garantisce la struttura settimanale completa
+    if(!this.plan || typeof this.plan!=="object") this.plan={};
+    GIORNI.forEach(([g])=>{
+      if(!this.plan[g] || typeof this.plan[g]!=="object") this.plan[g]={};
+      PASTI.forEach(([p])=>{ if(!Array.isArray(this.plan[g][p])) this.plan[g][p]=[]; });
+    });
+  },
+  openPiano(){ this.go("piano"); },
 
   go(view){
     const prev=this.view;
@@ -896,11 +958,14 @@ const App = {
     document.getElementById("navAdmin").classList.toggle("active", view==="admin");
     document.getElementById("navShare").classList.toggle("active", view==="share");
     document.getElementById("navSpesa").classList.toggle("active", view==="spesa");
+    document.getElementById("navPiano").classList.toggle("active", view==="piano");
     if(view==="browse") renderBrowse();
     else if(view==="detail") renderDetail();
     else if(view==="admin") renderAdmin();
     else if(view==="share") renderShare();
     else if(view==="spesa") renderSpesa();
+    else if(view==="piano") renderPiano();
+    else if(view==="stats") renderStats();
     window.scrollTo({top:0,behavior:"instant"in window?"instant":"auto"});
   },
 
@@ -957,7 +1022,7 @@ const App = {
   },
 
   open(rid){ this.currentId=rid; const r=this.find(rid); this.curPortions=r?r.porzioniBase:1; this.scale=1;
-    if(r) this.pushRecent(rid); this.go("detail"); },
+    if(r){ r.aperture=(r.aperture||0)+1; this.save(); this.pushRecent(rid); } this.go("detail"); },
   find(rid){ return this.recipes.find(r=>r.id===rid); },
 
   setPortions(p){
@@ -1109,6 +1174,7 @@ function renderBrowse(){
         <button class="chip bimby ${f.tipo==='bimby'?'on':''}" onclick="setTipo('bimby')">Bimby</button>
       </div>
       <div class="chips" style="margin-left:auto">
+        <button class="chip" onclick="App.go('stats')" title="Statistiche d'uso del ricettario">📊 Statistiche</button>
         <button class="chip" onclick="App.openShare('export')" title="Esporta o importa ricette per scambiarle">↔ Scambia ricette</button>
       </div>
     </div>
@@ -2004,6 +2070,211 @@ async function clearSpesa(){
   App.spesa=[]; await App.saveSpesa(); renderSpesa();
 }
 
+/* ===================== Pianificazione pasti ===================== */
+function renderPiano(){
+  App.ensurePlan();
+  // rimuovo eventuali riferimenti a ricette cancellate
+  let cleaned=false;
+  GIORNI.forEach(([g])=>PASTI.forEach(([p])=>{
+    const before=App.plan[g][p].length;
+    App.plan[g][p]=App.plan[g][p].filter(rid=>App.find(rid));
+    if(App.plan[g][p].length!==before) cleaned=true;
+  }));
+  if(cleaned) App.savePlan();
+
+  const app=document.getElementById("app");
+  const opts = App.recipes.slice().sort((a,b)=>a.nome.localeCompare(b.nome,'it'))
+    .map(r=>`<option value="${r.id}">${esc(r.nome)}</option>`).join("");
+  const totalMeals = GIORNI.reduce((n,[g])=>n+PASTI.reduce((m,[p])=>m+App.plan[g][p].length,0),0);
+
+  const dayCard=([g,gLabel])=>{
+    const meals=PASTI.map(([p,pLabel])=>{
+      const chips=App.plan[g][p].map(rid=>{
+        const r=App.find(rid); if(!r) return "";
+        return `<span class="plan-chip">
+          <button class="pc-name" onclick="App.open('${r.id}')" title="Apri la ricetta">${esc(r.nome)}</button>
+          <button class="pc-del" onclick="planRemove('${g}','${p}','${r.id}')" aria-label="Togli">${I.close}</button>
+        </span>`;
+      }).join("");
+      return `<div class="plan-slot">
+        <div class="ps-lbl">${pLabel}</div>
+        <div class="ps-body">
+          ${chips||'<span class="ps-empty">—</span>'}
+          <select class="plan-add" aria-label="Aggiungi a ${pLabel} — ${gLabel}" onchange="planAdd('${g}','${p}',this.value);this.selectedIndex=0" ${App.recipes.length?'':'disabled'}>
+            <option value="">+ ricetta</option>${opts}
+          </select>
+        </div>
+      </div>`;
+    }).join("");
+    const dayCount=PASTI.reduce((m,[p])=>m+App.plan[g][p].length,0);
+    return `<div class="plan-day">
+      <div class="pd-head"><h3>${gLabel}</h3>${dayCount?`<button class="btn sm ghost no-print" onclick="planClearDay('${g}')">svuota</button>`:''}</div>
+      ${meals}
+    </div>`;
+  };
+
+  const spesa=App.planSpesa, done=spesa.filter(s=>s.checked).length;
+
+  app.innerHTML=`
+    <button class="back no-print" onclick="App.go('browse')">${I.back} Torna al ricettario</button>
+    <h1 style="font-size:30px;margin-bottom:4px">Pianificazione pasti</h1>
+    <p class="lead" style="margin-top:0">Assegna le ricette ai pasti della settimana. Lo schema è riutilizzabile: resta com'è finché non lo cambi.</p>
+
+    ${App.recipes.length? "" : `<div class="empty"><h3>Nessuna ricetta</h3><p>Aggiungi qualche ricetta per poterla pianificare.</p></div>`}
+
+    <div class="plan-grid">${GIORNI.map(dayCard).join("")}</div>
+
+    <div class="plan-actions no-print">
+      <button class="btn primary" onclick="generatePlanSpesa()">${I.list} Genera lista della spesa</button>
+      ${totalMeals?`<button class="btn danger" onclick="planClearWeek()">Svuota settimana</button>`:''}
+    </div>
+
+    <div class="panel plan-spesa">
+      <div class="panel-head">
+        <h2>Lista della spesa della settimana</h2>
+        ${spesa.length?`<button class="btn sm no-print" onclick="window.print()">${I.print} Stampa</button>`:''}
+      </div>
+      ${spesa.length?`
+        <div class="share-tools">
+          <span class="hint"><b>${spesa.length}</b> ${plural(spesa.length,'voce','voci')} · ${done} ${plural(done,'presa','prese')}</span>
+          <span style="flex:1"></span>
+          <button class="btn sm danger no-print" onclick="clearPlanSpesa()">Svuota</button>
+        </div>
+        <div class="share-list spesa-list">
+          ${spesa.map((s,i)=>`<label class="share-row ${s.checked?'is-done':''}">
+            <input type="checkbox" ${s.checked?'checked':''} onchange="togglePlanSpesa(${i})">
+            <span class="sr-main"><span class="sr-name"><b class="sp-q">${s.q!=null? fmtQty(niceRound(s.q,s.u))+(s.u?' '+esc(s.u):'') : (s.u?esc(s.u):'q.b.')}</b> ${esc(s.n)}</span></span>
+          </label>`).join("")}
+        </div>`
+      : `<p class="hint" style="margin-top:8px">È <b>separata</b> dalla lista della spesa normale. Premi “Genera lista della spesa” per ricavarla dai pasti pianificati: gli ingredienti uguali vengono sommati, quelli con unità diverse o “q.b.” restano separati.</p>`}
+    </div>
+  `;
+}
+/* somma gli ingredienti di tutte le ricette pianificate (alle loro porzioni base) */
+function aggregatePlan(){
+  const agg=[], byKey={};
+  GIORNI.forEach(([g])=>PASTI.forEach(([p])=>{
+    App.plan[g][p].forEach(rid=>{
+      const r=App.find(rid); if(!r) return;
+      r.ingredienti.forEach(i=>{
+        const q=(i.q==null||i.q==="")?null:(parseFloat(i.q)||0);
+        const key=normName(i.n)+"|"+normName(i.u||"");
+        if(byKey[key]){ const ex=byKey[key]; if(ex.q!=null&&q!=null) ex.q=Math.round((ex.q+q)*100)/100; }
+        else { const item={key,n:i.n,u:i.u||"",q}; byKey[key]=item; agg.push(item); }
+      });
+    });
+  }));
+  return agg;
+}
+async function generatePlanSpesa(){
+  const prev={}; App.planSpesa.forEach(s=>{ if(s.checked) prev[s.key]=true; }); // conservo le spunte
+  App.planSpesa = aggregatePlan().map(s=>({...s, checked:!!prev[s.key]}));
+  await App.savePlanSpesa();
+  renderPiano();
+  toast(App.planSpesa.length? "Lista della spesa aggiornata dai pasti" : "Pianifica qualche pasto per generarla");
+}
+async function planAdd(g,p,rid){
+  if(!rid) return;
+  App.ensurePlan();
+  if(!App.plan[g][p].includes(rid)) App.plan[g][p].push(rid);
+  await App.savePlan(); renderPiano();
+}
+async function planRemove(g,p,rid){
+  App.plan[g][p]=(App.plan[g][p]||[]).filter(x=>x!==rid);
+  await App.savePlan(); renderPiano();
+}
+async function planClearDay(g){
+  PASTI.forEach(([p])=>App.plan[g][p]=[]);
+  await App.savePlan(); renderPiano();
+}
+async function planClearWeek(){
+  if(!confirm("Svuotare tutta la settimana pianificata?")) return;
+  GIORNI.forEach(([g])=>PASTI.forEach(([p])=>App.plan[g][p]=[]));
+  await App.savePlan(); renderPiano();
+}
+async function togglePlanSpesa(i){ App.planSpesa[i].checked=!App.planSpesa[i].checked; await App.savePlanSpesa(); renderPiano(); }
+async function clearPlanSpesa(){ App.planSpesa=[]; await App.savePlanSpesa(); renderPiano(); }
+
+/* ===================== Statistiche d'uso ===================== */
+function renderStats(){
+  const app=document.getElementById("app");
+  const rs=App.recipes, n=rs.length;
+
+  if(!n){
+    app.innerHTML=`<button class="back no-print" onclick="App.go('browse')">${I.back} Torna al ricettario</button>
+      <h1 style="font-size:30px">Statistiche</h1>
+      <div class="empty"><h3>Ancora niente da mostrare</h3><p>Aggiungi qualche ricetta e torna qui.</p></div>`;
+    return;
+  }
+
+  const fav=rs.filter(r=>r.preferito).length;
+  const bimby=rs.filter(r=>r.tipo==="bimby").length;
+  const classiche=n-bimby;
+  const conFoto=rs.filter(r=>Array.isArray(r.foto)&&r.foto.length).length;
+  const rated=rs.filter(r=>r.rating>0);
+  const votoMedio=rated.length? (rated.reduce((s,r)=>s+r.rating,0)/rated.length) : 0;
+  const maiAperte=rs.filter(r=>!r.aperture);
+  const pasti=App.plan?GIORNI.reduce((t,[g])=>t+PASTI.reduce((m,[p])=>m+App.plan[g][p].length,0),0):0;
+
+  // categorie
+  const catMap={};
+  rs.forEach(r=>{ const c=r.categoria||"Senza categoria"; catMap[c]=(catMap[c]||0)+1; });
+  const cats=Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
+  const catMax=cats.length?cats[0][1]:1;
+
+  // ingredienti più frequenti (per ricette che li usano)
+  const ingMap={};
+  rs.forEach(r=>{ const seen=new Set(); r.ingredienti.forEach(i=>{ const k=normName(i.n); if(!k||seen.has(k))return; seen.add(k); ingMap[k]=ingMap[k]||{n:i.n,c:0}; ingMap[k].c++; }); });
+  const ings=Object.values(ingMap).sort((a,b)=>b.c-a.c).slice(0,10);
+  const ingMax=ings.length?ings[0].c:1;
+
+  // più aperte
+  const aperte=rs.filter(r=>r.aperture>0).sort((a,b)=>b.aperture-a.aperture).slice(0,5);
+
+  const bar=(label,val,max,extra)=>`
+    <div class="stat-bar">
+      <div class="sb-top"><span class="sb-lbl">${esc(label)}</span><span class="sb-val">${val}${extra||''}</span></div>
+      <div class="sb-track"><div class="sb-fill" style="width:${Math.max(6,Math.round(val/max*100))}%"></div></div>
+    </div>`;
+
+  app.innerHTML=`
+    <button class="back no-print" onclick="App.go('browse')">${I.back} Torna al ricettario</button>
+    <h1 style="font-size:30px;margin-bottom:4px">Statistiche d'uso</h1>
+    <p class="lead" style="margin-top:0">Uno sguardo d'insieme al tuo ricettario. Aperture e voti sono personali e non vengono condivisi.</p>
+
+    <div class="stat-cards">
+      <div class="stat-card"><div class="sc-num">${n}</div><div class="sc-lbl">${plural(n,'ricetta','ricette')}</div></div>
+      <div class="stat-card"><div class="sc-num">${fav}</div><div class="sc-lbl">preferite</div></div>
+      <div class="stat-card"><div class="sc-num">${classiche}·${bimby}</div><div class="sc-lbl">classiche · Bimby</div></div>
+      <div class="stat-card"><div class="sc-num">${conFoto}</div><div class="sc-lbl">con foto</div></div>
+      <div class="stat-card"><div class="sc-num">${votoMedio?votoMedio.toFixed(1):'—'}</div><div class="sc-lbl">voto medio${rated.length?` (${rated.length})`:''}</div></div>
+      <div class="stat-card"><div class="sc-num">${pasti}</div><div class="sc-lbl">pasti pianificati</div></div>
+    </div>
+
+    <div class="stat-cols">
+      <div class="panel">
+        <h2>Categorie</h2>
+        <div class="stat-bars">${cats.slice(0,8).map(([c,v])=>bar(c,v,catMax)).join("")}</div>
+      </div>
+      <div class="panel">
+        <h2>Ingredienti più usati</h2>
+        ${ings.length?`<div class="stat-bars">${ings.map(o=>bar(o.n,o.c,ingMax,` ${plural(o.c,'ricetta','ricette')}`)).join("")}</div>`:`<p class="hint">Nessun ingrediente registrato.</p>`}
+      </div>
+    </div>
+
+    <div class="stat-cols">
+      <div class="panel">
+        <h2>Le più aperte</h2>
+        ${aperte.length?`<ol class="stat-rank">${aperte.map(r=>`<li><button class="linklike" onclick="App.open('${r.id}')">${esc(r.nome)}</button><span class="sr-count">${r.aperture}×</span></li>`).join("")}</ol>`:`<p class="hint">Apri qualche ricetta: qui vedrai le più consultate.</p>`}
+      </div>
+      <div class="panel">
+        <h2>Mai aperte <span class="hint">(${maiAperte.length})</span></h2>
+        ${maiAperte.length?`<ul class="stat-list">${maiAperte.slice(0,12).map(r=>`<li><button class="linklike" onclick="App.open('${r.id}')">${esc(r.nome)}</button></li>`).join("")}${maiAperte.length>12?`<li class="hint">…e altre ${maiAperte.length-12}</li>`:''}</ul>`:`<p class="hint">Le hai aperte tutte almeno una volta. Bravo!</p>`}
+      </div>
+    </div>
+  `;
+}
+
 /* ===================== Scambio ricette (export/import) ===================== */
 function normName(s){ return stripAccents(s).trim(); } // minuscolo + senza accenti: "Tiramisù" == "Tiramisu"
 
@@ -2058,7 +2329,7 @@ function exportToggle(rid){ if(App.exportSel.has(rid)) App.exportSel.delete(rid)
 async function doExport(){
   const withPhotos = hasIDB && App.exportPhotos;
   const chosen=App.recipes.filter(r=>App.exportSel.has(r.id))
-    .map(r=>{ const c=JSON.parse(JSON.stringify(r)); delete c.preferito; delete c.rating; // personali
+    .map(r=>{ const c=JSON.parse(JSON.stringify(r)); delete c.preferito; delete c.rating; delete c.aperture; // personali
               if(!withPhotos) c.foto=[]; return c; });
   if(!chosen.length){ toast("Seleziona almeno una ricetta"); return; }
   const payload={ app:"Ricettario", versione:1, esportato:new Date().toISOString(), ricette:chosen };
@@ -2146,7 +2417,7 @@ function onImportFile(input){
         if(!Array.isArray(r.passaggi)) r.passaggi=[];
         if(!Array.isArray(r.tags)) r.tags=[];
         if(typeof r.note!=="string") r.note="";
-        r.preferito=false; r.rating=0; // preferito e voto sono personali
+        r.preferito=false; r.rating=0; r.aperture=0; // preferito, voto e aperture sono personali
         // foto: tengo solo i riferimenti che hanno davvero i dati nel file
         r.foto = Array.isArray(r.foto) ? r.foto.filter(fid=>fotos[fid]) : [];
         if(!r.id || seenIncoming.has(r.id)) r.id=id(); // garantisce ID univoco
