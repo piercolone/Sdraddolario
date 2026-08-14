@@ -34,8 +34,12 @@ jobs:
           npm install -g cordova
           npm ci || npm install
 
-      - name: Build Cordova APK
+      - name: Pulizia e Build Cordova APK
         run: |
+          # Rimuove lo spazio UTF-8 NBSP (\xC2\xA0) e il BOM (\xEF\xBB\xBF) da config.xml
+          sed -i 's/\xC2\xA0/ /g; s/\xEF\xBB\xBF//g' config.xml
+          
+          # Pulisce le piattaforme ed esegue la build Android
           rm -rf platforms/
           npx cordova platform add android@14.0.1
           npx cordova build android --debug
