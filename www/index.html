@@ -33,6 +33,7 @@
     font-size:16px;line-height:1.5;
     -webkit-font-smoothing:antialiased;
     padding-bottom:env(safe-area-inset-bottom);
+    overflow-x:hidden;   /* evita che un elemento largo faccia sbordare l'intera pagina */
   }
   h1,h2,h3{font-family:Fraunces,Georgia,serif;font-weight:600;line-height:1.12;margin:0}
   button{font-family:inherit;cursor:pointer}
@@ -63,10 +64,11 @@
   .brand b{font-family:Fraunces;font-weight:600;font-size:21px;letter-spacing:.2px}
   .brand small{display:block;color:var(--muted);font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-family:"Space Mono",monospace}
   .bar-spacer{flex:1 1 auto}
-  .nav{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:3px}
+  .nav{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:3px;max-width:100%}
   .nav button{
     border:0;background:transparent;color:var(--muted);
     padding:7px 14px;border-radius:8px;font-weight:600;font-size:14px;
+    min-width:0;white-space:nowrap;
   }
   .nav button.active{background:var(--ink);color:var(--paper)}
 
@@ -241,9 +243,10 @@
   .three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
   @media (max-width:560px){ .two,.three{grid-template-columns:1fr} }
 
-  fieldset.block{border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:0 0 18px;background:var(--surface)}
+  fieldset.block{border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:0 0 18px;background:var(--surface);overflow:hidden}
   fieldset.block legend{font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;
-    color:var(--muted);padding:0 8px;font-weight:700}
+    color:var(--muted);font-weight:700;
+    float:left;width:100%;padding:0;margin:0 0 12px;display:block;} /* niente "notch": titolo interno normale */
 
   .ing-row{display:grid;grid-template-columns:84px 96px 1fr 38px;gap:8px;margin-bottom:9px;align-items:center}
   .ing-row input{padding:9px 10px;border:1px solid var(--line-strong);border-radius:9px;background:var(--paper);width:100%}
@@ -457,7 +460,10 @@
     .bar-in{flex-wrap:wrap;gap:10px}
     .brand small{display:none}
     .nav{order:3;width:100%}
-    .nav button{flex:1}
+    .nav button{flex:1 1 0;min-width:0;padding:8px 4px;font-size:13px;overflow:hidden;text-overflow:ellipsis}
+  }
+  @media (max-width:360px){
+    .nav button{font-size:12px;letter-spacing:-.2px}
   }
 </style>
 
@@ -689,9 +695,11 @@ function plural(n,one,many){ return n===1?one:many; }
 /* ===================== Lettura vocale (SpeechSynthesis) ===================== */
 const Speech = {
   _voice:null, _loaded:false,
-  supported(){ return typeof window!=="undefined" && "speechSynthesis" in window && "SpeechSynthesisUtterance" in window; },
+  _hasWeb(){ return typeof window!=="undefined" && "speechSynthesis" in window && "SpeechSynthesisUtterance" in window; },
+  _hasPlugin(){ return typeof window!=="undefined" && window.TTS && typeof window.TTS.speak==="function"; },
+  supported(){ return this._hasPlugin() || this._hasWeb(); },
   _loadVoices(){
-    if(!this.supported()) return;
+    if(!this._hasWeb()) return;
     const vs=window.speechSynthesis.getVoices()||[];
     if(vs.length){
       this._voice = vs.find(v=>/^it(-|_|$)/i.test(v.lang)) || vs.find(v=>/it/i.test(v.name)) || null;
@@ -699,12 +707,16 @@ const Speech = {
     }
   },
   init(){
-    if(!this.supported()) return;
+    if(!this._hasWeb()) return;
     this._loadVoices();
     try{ window.speechSynthesis.onvoiceschanged=()=>this._loadVoices(); }catch(e){}
   },
-  speaking(){ try{ return this.supported() && window.speechSynthesis.speaking; }catch(e){ return false; } },
-  stop(){ try{ if(this.supported()) window.speechSynthesis.cancel(); }catch(e){} },
+  speaking(){ try{ return this._speakingFlag || (this._hasWeb() && window.speechSynthesis.speaking); }catch(e){ return false; } },
+  stop(){
+    this._speakingFlag=false;
+    try{ if(this._hasPlugin() && window.TTS.stop) window.TTS.stop(); }catch(e){}
+    try{ if(this._hasWeb()) window.speechSynthesis.cancel(); }catch(e){}
+  },
   _utter(text){
     const u=new SpeechSynthesisUtterance(text);
     u.lang="it-IT"; u.rate=1; u.pitch=1;
@@ -713,9 +725,15 @@ const Speech = {
     return u;
   },
   speak(text){
-    if(!this.supported() || !text) return;
+    if(!text) return;
     this.stop();
-    window.speechSynthesis.speak(this._utter(text));
+    if(this._hasPlugin()){
+      this._speakingFlag=true;
+      try{ const p=window.TTS.speak({text, locale:"it-IT", rate:1.0}); if(p&&p.then) p.then(()=>{this._speakingFlag=false;},()=>{this._speakingFlag=false;}); }
+      catch(e){ this._speakingFlag=false; if(this._hasWeb()) window.speechSynthesis.speak(this._utter(text)); }
+      return;
+    }
+    if(this._hasWeb()) window.speechSynthesis.speak(this._utter(text));
   },
   /* legge una sequenza di testi uno dopo l'altro */
   speakList(texts, onStep){
@@ -723,11 +741,18 @@ const Speech = {
     this.stop();
     let i=0;
     const next=()=>{
-      if(i>=texts.length) return;
-      const u=this._utter(texts[i]);
+      if(i>=texts.length){ this._speakingFlag=false; return; }
       if(onStep) try{ onStep(i); }catch(e){}
-      u.onend=()=>{ i++; next(); };
-      window.speechSynthesis.speak(u);
+      if(this._hasPlugin()){
+        this._speakingFlag=true;
+        try{ const p=window.TTS.speak({text:texts[i], locale:"it-IT", rate:1.0});
+             if(p&&p.then) p.then(()=>{ i++; next(); },()=>{ this._speakingFlag=false; }); else { i++; next(); } }
+        catch(e){ this._speakingFlag=false; }
+      } else {
+        const u=this._utter(texts[i]);
+        u.onend=()=>{ i++; next(); };
+        window.speechSynthesis.speak(u);
+      }
     };
     next();
   }
