@@ -604,6 +604,10 @@
 <div id="toast" class="toast"></div>
 <div id="cook" class="cook hidden" aria-hidden="true"></div>
 
+<!-- Presente solo dentro l'APK Cordova: abilita i plugin nativi (file, condivisione, schermo acceso).
+     Nel browser/PWA questo file non esiste e l'errore 404 è innocuo (l'app funziona con le API web). -->
+<script src="cordova.js"></script>
+
 <script>
 "use strict";
 
@@ -2602,26 +2606,33 @@ function exportSelectAll(on){ App.exportSel = on ? new Set(App.recipes.map(r=>r.
 function exportToggle(rid){ if(App.exportSel.has(rid)) App.exportSel.delete(rid); else App.exportSel.add(rid);
   const c=document.getElementById("expCount"); if(c) c.textContent=App.exportSel.size; }
 async function doExport(){
-  const withPhotos = hasIDB && App.exportPhotos;
-  const chosen=App.recipes.filter(r=>App.exportSel.has(r.id))
-    .map(r=>{ const c=JSON.parse(JSON.stringify(r)); delete c.preferito; delete c.rating; delete c.aperture; // personali
-              if(!withPhotos) c.foto=[]; return c; });
-  if(!chosen.length){ toast("Seleziona almeno una ricetta"); return; }
-  const payload={ app:"Ricettario", versione:1, esportato:new Date().toISOString(), ricette:chosen };
-  if(withPhotos){
-    toast("Preparo le foto…");
-    const fotos={};
-    for(const r of chosen){
-      for(const fid of (r.foto||[])){
-        if(fotos[fid]) continue;
-        const rec=await IDB.get(fid);
-        if(rec&&rec.blob){ try{ fotos[fid]=await blobToDataURL(rec.blob); }catch(e){} }
+  try{
+    const withPhotos = hasIDB && App.exportPhotos;
+    const chosen=App.recipes.filter(r=>App.exportSel.has(r.id))
+      .map(r=>{ const c=JSON.parse(JSON.stringify(r)); delete c.preferito; delete c.rating; delete c.aperture; // personali
+                if(!withPhotos) c.foto=[]; return c; });
+    if(!chosen.length){ toast("Seleziona almeno una ricetta"); return; }
+    const payload={ app:"Ricettario", versione:1, esportato:new Date().toISOString(), ricette:chosen };
+    if(withPhotos){
+      toast("Preparo le foto…");
+      const fotos={};
+      for(const r of chosen){
+        for(const fid of (r.foto||[])){
+          if(fotos[fid]) continue;
+          try{ const rec=await IDB.get(fid); if(rec&&rec.blob){ fotos[fid]=await blobToDataURL(rec.blob); } }
+          catch(e){ warn("lettura foto "+fid, e); }
+        }
       }
+      payload.fotos=fotos;
     }
-    payload.fotos=fotos;
+    const fname="ricette-"+new Date().toISOString().slice(0,10)+".json";
+    // downloadJSON ora restituisce una Promise: attendo così il catch è una vera rete di sicurezza.
+    // markBackupDone() resta interno e scatta solo su esito reale (annullamento non segna il backup).
+    await downloadJSON(payload, fname);
+  }catch(err){
+    warn("esportazione", err);
+    toast("Si è verificato un errore durante l'esportazione");
   }
-  const fname="ricette-"+new Date().toISOString().slice(0,10)+".json";
-  downloadJSON(payload, fname);
 }
 
 /* ---------- IMPORTA ---------- */
@@ -2757,30 +2768,37 @@ function markBackupDone(){ App.settings.lastBackup=Date.now(); App.saveSettings(
 function downloadJSON(obj, filename){
   const text=JSON.stringify(obj,null,2);
   const isApp = !!(window.cordova && window.resolveLocalFileSystemURL && window.cordova.file);
-  if(isApp) cordovaBackup(text, filename);   // scrive persistente + condivide
-  else exportFallback(text, filename);       // browser/PWA: copia / scarica / condividi
+  return isApp ? cordovaBackup(text, filename)   // scrive persistente + condivide
+               : exportFallback(text, filename);  // browser/PWA: copia / scarica / condividi
 }
 
 /* App Android: scrive il backup nello spazio PERSISTENTE dell'app (non cache), poi condivide.
-   Il backup si considera fatto alla SCRITTURA riuscita; se annulli la condivisione, resta comunque. */
+   Restituisce una Promise: si risolve a operazione conclusa, rigetta solo su errore inatteso
+   (gli errori di scrittura "previsti" ripiegano sul pannello Copia, senza rompere il flusso).
+   markBackupDone() scatta SOLO a scrittura riuscita: se annulli la condivisione, il backup resta. */
 function cordovaBackup(text, shareName){
-  const dir = cordova.file.externalDataDirectory || cordova.file.dataDirectory;
-  if(!dir){ exportFallback(text, shareName); return; }
-  const fail=function(){ toast("Scrittura non riuscita: uso Copia"); exportFallback(text, shareName); };
-  window.resolveLocalFileSystemURL(dir, function(dirEntry){
-    dirEntry.getFile(BACKUP_FILENAME, {create:true, exclusive:false}, function(fileEntry){
-      fileEntry.createWriter(function(w){
-        w.onwriteend=function(){
-          markBackupDone();                       // il file esiste sul dispositivo
-          if(App.view==="share") renderShare();   // aggiorno "ultimo backup"
-          toast("Backup salvato nell'app ✓");
-          shareFile(fileEntry.toURL());           // poi offro Condividi/Salva
-        };
-        w.onerror=fail;
-        w.write(new Blob([text],{type:"application/json"}));
-      }, fail);
-    }, fail);
-  }, fail);
+  return new Promise(function(resolve, reject){
+    try{
+      const dir = cordova.file.externalDataDirectory || cordova.file.dataDirectory;
+      if(!dir){ exportFallback(text, shareName); return resolve(false); }
+      const fallback=function(e){ warn("scrittura backup", e); toast("Uso il pannello Copia"); exportFallback(text, shareName); resolve(false); };
+      window.resolveLocalFileSystemURL(dir, function(dirEntry){
+        dirEntry.getFile(BACKUP_FILENAME, {create:true, exclusive:false}, function(fileEntry){
+          fileEntry.createWriter(function(w){
+            w.onwriteend=function(){
+              markBackupDone();                       // il file esiste sul dispositivo
+              if(App.view==="share"){ try{ renderShare(); }catch(_){} } // aggiorno "ultimo backup"
+              toast("Backup salvato nell'app ✓");
+              shareFile(fileEntry.toURL());           // condivisione: l'annullamento non toglie il backup
+              resolve(true);
+            };
+            w.onerror=fallback;
+            w.write(new Blob([text],{type:"application/json"}));
+          }, fallback);
+        }, fallback);
+      }, fallback);
+    }catch(e){ reject(e); }   // errore davvero inatteso -> lo intercetta il catch di doExport
+  });
 }
 function shareFile(url){
   if(window.plugins && window.plugins.socialsharing){
@@ -2799,45 +2817,48 @@ function shareLastBackup(){
 }
 
 function exportFallback(text, filename){
-  const old=document.getElementById("exportModal"); if(old) old.remove();
-  let canWebShare=false;
-  try{ const f=new File([text],filename,{type:"application/json"}); canWebShare=!!(navigator.canShare && navigator.canShare({files:[f]})); }catch(e){}
-  const wrap=document.createElement("div");
-  wrap.id="exportModal"; wrap.className="modal-overlay";
-  wrap.innerHTML=`
-    <div class="modal">
-      <h2>Backup delle ricette</h2>
-      <p class="hint">Consigliato: <b>Copia negli appunti</b> e incolla in una mail a te stesso, in Note o su Drive. In alternativa Condividi/Salva o Scarica.</p>
-      <textarea id="exportText" readonly spellcheck="false"></textarea>
-      <div class="modal-actions">
-        <button class="btn primary" id="btnCopy">Copia negli appunti</button>
-        ${canWebShare?`<button class="btn" id="btnShare">Condividi / Salva</button>`:``}
-        <button class="btn" id="btnDl">Scarica file</button>
-        <button class="btn ghost" id="btnClose">Chiudi</button>
-      </div>
-    </div>`;
-  document.body.appendChild(wrap);
-  const ta=wrap.querySelector("#exportText"); ta.value=text;
-  wrap.querySelector("#btnClose").onclick=()=>wrap.remove();
-  wrap.onclick=(e)=>{ if(e.target===wrap) wrap.remove(); };
-  wrap.querySelector("#btnCopy").onclick=async ()=>{
-    let ok=false;
-    try{ if(navigator.clipboard && navigator.clipboard.writeText){ await navigator.clipboard.writeText(text); ok=true; } }catch(e){}
-    if(!ok){ try{ ta.focus(); ta.select(); ta.setSelectionRange(0,text.length); ok=document.execCommand("copy"); }catch(e){} }
-    if(ok){ markBackupDone(); if(App.view==="share") renderShare(); }
-    toast(ok?"Copiato ✓ — incollalo in un posto sicuro":"Seleziona il testo e copialo a mano");
-  };
-  wrap.querySelector("#btnDl").onclick=()=>{
-    try{
-      const blob=new Blob([text],{type:"application/json"}); const url=URL.createObjectURL(blob);
-      const a=document.createElement("a"); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
-      URL.revokeObjectURL(url); markBackupDone(); if(App.view==="share") renderShare();
-      toast("Scaricato (se non parte, usa Copia)");
-    }catch(e){ toast("Download non disponibile: usa Copia"); }
-  };
-  const sb=wrap.querySelector("#btnShare");
-  if(sb){ sb.onclick=()=>{ try{ const f=new File([text],filename,{type:"application/json"});
-    navigator.share({files:[f], title:"Ricette dal Ricettario"}).then(()=>{ markBackupDone(); },()=>{}); }catch(e){} }; }
+  return new Promise(function(resolve){
+    const old=document.getElementById("exportModal"); if(old) old.remove();
+    let canWebShare=false;
+    try{ const f=new File([text],filename,{type:"application/json"}); canWebShare=!!(navigator.canShare && navigator.canShare({files:[f]})); }catch(e){}
+    const wrap=document.createElement("div");
+    wrap.id="exportModal"; wrap.className="modal-overlay";
+    wrap.innerHTML=`
+      <div class="modal">
+        <h2>Backup delle ricette</h2>
+        <p class="hint">Consigliato: <b>Copia negli appunti</b> e incolla in una mail a te stesso, in Note o su Drive. In alternativa Condividi/Salva o Scarica.</p>
+        <textarea id="exportText" readonly spellcheck="false"></textarea>
+        <div class="modal-actions">
+          <button class="btn primary" id="btnCopy">Copia negli appunti</button>
+          ${canWebShare?`<button class="btn" id="btnShare">Condividi / Salva</button>`:``}
+          <button class="btn" id="btnDl">Scarica file</button>
+          <button class="btn ghost" id="btnClose">Chiudi</button>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap);
+    const ta=wrap.querySelector("#exportText"); ta.value=text;
+    const close=()=>{ wrap.remove(); resolve(true); };
+    wrap.querySelector("#btnClose").onclick=close;
+    wrap.onclick=(e)=>{ if(e.target===wrap) close(); };
+    wrap.querySelector("#btnCopy").onclick=async ()=>{
+      let ok=false;
+      try{ if(navigator.clipboard && navigator.clipboard.writeText){ await navigator.clipboard.writeText(text); ok=true; } }catch(e){}
+      if(!ok){ try{ ta.focus(); ta.select(); ta.setSelectionRange(0,text.length); ok=document.execCommand("copy"); }catch(e){} }
+      if(ok){ markBackupDone(); if(App.view==="share"){ try{ renderShare(); }catch(_){} } }
+      toast(ok?"Copiato ✓ — incollalo in un posto sicuro":"Seleziona il testo e copialo a mano");
+    };
+    wrap.querySelector("#btnDl").onclick=()=>{
+      try{
+        const blob=new Blob([text],{type:"application/json"}); const url=URL.createObjectURL(blob);
+        const a=document.createElement("a"); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url); markBackupDone(); if(App.view==="share"){ try{ renderShare(); }catch(_){} }
+        toast("Scaricato (se non parte, usa Copia)");
+      }catch(e){ toast("Download non disponibile: usa Copia"); }
+    };
+    const sb=wrap.querySelector("#btnShare");
+    if(sb){ sb.onclick=()=>{ try{ const f=new File([text],filename,{type:"application/json"});
+      navigator.share({files:[f], title:"Ricette dal Ricettario"}).then(()=>{ markBackupDone(); },()=>{}); }catch(e){} }; }
+  });
 }
 
 /* ===================== Toast ===================== */
@@ -2860,6 +2881,14 @@ document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState=
 
 /* ===================== Avvio ===================== */
 App.init();
+
+/* Cordova (solo nell'APK): quando è pronto, le funzioni native diventano disponibili.
+   Nel browser/PWA il file cordova.js non esiste e viene semplicemente ignorato. */
+document.addEventListener("deviceready", function(){
+  App.cordovaReady = true;
+  try{ Speech.init(); }catch(e){}         // eventuale plugin voce (window.TTS)
+  if(App.view==="share"){ try{ renderShare(); }catch(e){} } // mostra le opzioni di backup native
+}, false);
 </script>
 
 <!-- PWA: attiva manifest e service worker SOLO quando l'app è servita dal web (http/https).
