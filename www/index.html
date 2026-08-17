@@ -456,6 +456,11 @@
   .modal textarea{width:100%;height:200px;margin-top:10px;font-family:"Space Mono",monospace;font-size:12px;
     border:1px solid var(--line-strong);border-radius:10px;padding:10px;background:var(--paper);color:var(--ink);resize:vertical}
   .modal-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .backup-box{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:16px}
+  .backup-box .bx-title{font-weight:700}
+  .backup-box .bx-sub{font-size:13px;color:var(--muted);margin-top:2px}
+  .backup-box .ok{color:var(--bimby);font-weight:600}
   .share-row.is-done{opacity:.5}
   .share-row.is-done .sr-name{text-decoration:line-through}
   .share-row input[type=checkbox]{accent-color:var(--primary)}
@@ -2559,7 +2564,17 @@ function renderExportTab(){
   const body=document.getElementById("shareBody");
   if(!App.recipes.length){ body.innerHTML=`<div class="empty"><h3>Nessuna ricetta da esportare</h3></div>`; return; }
   const sel=App.exportSel;
+  const isApp = !!(window.cordova && window.resolveLocalFileSystemURL && window.cordova.file);
+  const nb=daysSince(App.settings.lastBackup);
+  const backupData = App.settings.lastBackup ? fmtDateTime(App.settings.lastBackup) : null;
   body.innerHTML=`
+    <div class="backup-box">
+      <div class="bx-txt">
+        <div class="bx-title">Backup delle ricette</div>
+        <div class="bx-sub">${backupData ? `Ultimo backup: <b>${backupData}</b>${isApp?` · <span class="ok">copia locale nell'app</span>`:``}` : "Non hai ancora fatto un backup."}</div>
+      </div>
+      ${isApp && App.settings.lastBackup ? `<button class="btn sm" onclick="shareLastBackup()">Apri / condividi ultimo backup</button>` : ``}
+    </div>
     <div class="share-tools">
       <span class="hint"><b id="expCount">${sel.size}</b> di ${App.recipes.length} selezionate</span>
       <span style="flex:1"></span>
@@ -2607,7 +2622,6 @@ async function doExport(){
   }
   const fname="ricette-"+new Date().toISOString().slice(0,10)+".json";
   downloadJSON(payload, fname);
-  App.settings.lastBackup=Date.now(); App.saveSettings();   // per il promemoria backup
 }
 
 /* ---------- IMPORTA ---------- */
@@ -2732,29 +2746,72 @@ async function doImport(){
   App.go("browse");
 }
 
-/* ---------- Scrittura/condivisione file (browser + Cordova) ---------- */
+/* ---------- Esportazione backup ---------- */
+const BACKUP_FILENAME = "ricettario-backup.json";
+function fmtDateTime(ts){
+  try{ return new Date(ts).toLocaleString("it-IT",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}); }
+  catch(e){ return ""; }
+}
+function markBackupDone(){ App.settings.lastBackup=Date.now(); App.saveSettings(); } // solo quando il backup esiste davvero
+
 function downloadJSON(obj, filename){
   const text=JSON.stringify(obj,null,2);
-  // App Android (Cordova): scrive il file e apre il menu Condividi
-  if(window.cordova && window.resolveLocalFileSystemURL){
-    cordovaSaveShare(text, filename);
-    return;
-  }
-  // Browser / WebView generica: mostro un pannello con Copia/Condividi/Scarica
-  exportFallback(text, filename);
+  const isApp = !!(window.cordova && window.resolveLocalFileSystemURL && window.cordova.file);
+  if(isApp) cordovaBackup(text, filename);   // scrive persistente + condivide
+  else exportFallback(text, filename);       // browser/PWA: copia / scarica / condividi
 }
+
+/* App Android: scrive il backup nello spazio PERSISTENTE dell'app (non cache), poi condivide.
+   Il backup si considera fatto alla SCRITTURA riuscita; se annulli la condivisione, resta comunque. */
+function cordovaBackup(text, shareName){
+  const dir = cordova.file.externalDataDirectory || cordova.file.dataDirectory;
+  if(!dir){ exportFallback(text, shareName); return; }
+  const fail=function(){ toast("Scrittura non riuscita: uso Copia"); exportFallback(text, shareName); };
+  window.resolveLocalFileSystemURL(dir, function(dirEntry){
+    dirEntry.getFile(BACKUP_FILENAME, {create:true, exclusive:false}, function(fileEntry){
+      fileEntry.createWriter(function(w){
+        w.onwriteend=function(){
+          markBackupDone();                       // il file esiste sul dispositivo
+          if(App.view==="share") renderShare();   // aggiorno "ultimo backup"
+          toast("Backup salvato nell'app ✓");
+          shareFile(fileEntry.toURL());           // poi offro Condividi/Salva
+        };
+        w.onerror=fail;
+        w.write(new Blob([text],{type:"application/json"}));
+      }, fail);
+    }, fail);
+  }, fail);
+}
+function shareFile(url){
+  if(window.plugins && window.plugins.socialsharing){
+    window.plugins.socialsharing.shareWithOptions(
+      {message:"Backup Ricettario", subject:"Backup Ricettario", files:[url]},
+      function(){}, function(){});
+  }
+}
+/* ricondivide l'ultimo backup già scritto, senza rigenerarlo */
+function shareLastBackup(){
+  const base = window.cordova && cordova.file && (cordova.file.externalDataDirectory||cordova.file.dataDirectory);
+  if(!base){ toast("Non disponibile qui"); return; }
+  window.resolveLocalFileSystemURL(base + BACKUP_FILENAME, function(fe){
+    shareFile(fe.toURL());
+  }, function(){ toast("Nessun backup salvato: premi Esporta"); });
+}
+
 function exportFallback(text, filename){
   const old=document.getElementById("exportModal"); if(old) old.remove();
+  let canWebShare=false;
+  try{ const f=new File([text],filename,{type:"application/json"}); canWebShare=!!(navigator.canShare && navigator.canShare({files:[f]})); }catch(e){}
   const wrap=document.createElement("div");
   wrap.id="exportModal"; wrap.className="modal-overlay";
   wrap.innerHTML=`
     <div class="modal">
       <h2>Backup delle ricette</h2>
-      <p class="hint">Il modo più sicuro: <b>Copia negli appunti</b> e incolla in una mail a te stesso, in Note o su Drive. In alternativa usa Condividi o Scarica.</p>
+      <p class="hint">Consigliato: <b>Copia negli appunti</b> e incolla in una mail a te stesso, in Note o su Drive. In alternativa Condividi/Salva o Scarica.</p>
       <textarea id="exportText" readonly spellcheck="false"></textarea>
       <div class="modal-actions">
         <button class="btn primary" id="btnCopy">Copia negli appunti</button>
-        <button class="btn" id="btnShare" style="display:none">Condividi / Salva</button>
+        ${canWebShare?`<button class="btn" id="btnShare">Condividi / Salva</button>`:``}
         <button class="btn" id="btnDl">Scarica file</button>
         <button class="btn ghost" id="btnClose">Chiudi</button>
       </div>
@@ -2767,42 +2824,20 @@ function exportFallback(text, filename){
     let ok=false;
     try{ if(navigator.clipboard && navigator.clipboard.writeText){ await navigator.clipboard.writeText(text); ok=true; } }catch(e){}
     if(!ok){ try{ ta.focus(); ta.select(); ta.setSelectionRange(0,text.length); ok=document.execCommand("copy"); }catch(e){} }
-    toast(ok?"Copiato negli appunti":"Seleziona il testo e copialo a mano");
+    if(ok){ markBackupDone(); if(App.view==="share") renderShare(); }
+    toast(ok?"Copiato ✓ — incollalo in un posto sicuro":"Seleziona il testo e copialo a mano");
   };
   wrap.querySelector("#btnDl").onclick=()=>{
-    try{ const blob=new Blob([text],{type:"application/json"}); const url=URL.createObjectURL(blob);
-      const a=document.createElement("a"); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-      toast("Se non parte il download, usa Copia"); }catch(e){ toast("Download non disponibile: usa Copia"); }
+    try{
+      const blob=new Blob([text],{type:"application/json"}); const url=URL.createObjectURL(blob);
+      const a=document.createElement("a"); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url); markBackupDone(); if(App.view==="share") renderShare();
+      toast("Scaricato (se non parte, usa Copia)");
+    }catch(e){ toast("Download non disponibile: usa Copia"); }
   };
-  try{
-    const file=new File([text], filename, {type:"application/json"});
-    if(navigator.canShare && navigator.canShare({files:[file]})){
-      const b=wrap.querySelector("#btnShare"); b.style.display="";
-      b.onclick=async ()=>{ try{ await navigator.share({files:[file], title:"Ricette dal Ricettario"}); }catch(e){} };
-    }
-  }catch(e){}
-}
-function cordovaSaveShare(text, filename){
-  const dir = (window.cordova.file && (cordova.file.externalCacheDirectory||cordova.file.cacheDirectory)) || null;
-  if(!dir){ toast("Storage non disponibile"); return; }
-  window.resolveLocalFileSystemURL(dir, function(dirEntry){
-    dirEntry.getFile(filename, {create:true, exclusive:false}, function(fileEntry){
-      fileEntry.createWriter(function(w){
-        w.onwriteend=function(){
-          const url=fileEntry.toURL();
-          if(window.plugins && window.plugins.socialsharing){
-            window.plugins.socialsharing.shareWithOptions(
-              {message:"Ricette dal Ricettario", files:[url]},
-              function(){}, function(){ toast("File salvato: "+url); });
-          } else {
-            toast("File salvato: "+url);
-          }
-        };
-        w.onerror=function(){ toast("Scrittura non riuscita"); };
-        w.write(new Blob([text],{type:"application/json"}));
-      });
-    });
-  }, function(){ toast("Cartella non accessibile"); });
+  const sb=wrap.querySelector("#btnShare");
+  if(sb){ sb.onclick=()=>{ try{ const f=new File([text],filename,{type:"application/json"});
+    navigator.share({files:[f], title:"Ricette dal Ricettario"}).then(()=>{ markBackupDone(); },()=>{}); }catch(e){} }; }
 }
 
 /* ===================== Toast ===================== */
