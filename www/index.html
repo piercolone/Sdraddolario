@@ -2598,6 +2598,7 @@ function renderExportTab(){
     <div class="form-actions" style="margin-top:20px">
       ${hasIDB?`<label class="incl-foto"><input type="checkbox" id="exportPhotos" ${App.exportPhotos?'checked':''} onchange="App.exportPhotos=this.checked"> Includi foto <span class="hint">(file più pesante)</span></label>`:""}
       <div class="spacer"></div>
+      <button class="btn" onclick="copyExport()">Copia negli appunti</button>
       <button class="btn primary" onclick="doExport()">Esporta selezionate</button>
     </div>
   `;
@@ -2605,34 +2606,44 @@ function renderExportTab(){
 function exportSelectAll(on){ App.exportSel = on ? new Set(App.recipes.map(r=>r.id)) : new Set(); renderExportTab(); }
 function exportToggle(rid){ if(App.exportSel.has(rid)) App.exportSel.delete(rid); else App.exportSel.add(rid);
   const c=document.getElementById("expCount"); if(c) c.textContent=App.exportSel.size; }
+async function buildExportPayload(){
+  const withPhotos = hasIDB && App.exportPhotos;
+  const chosen=App.recipes.filter(r=>App.exportSel.has(r.id))
+    .map(r=>{ const c=JSON.parse(JSON.stringify(r)); delete c.preferito; delete c.rating; delete c.aperture; // personali
+              if(!withPhotos) c.foto=[]; return c; });
+  if(!chosen.length) return null;
+  const payload={ app:"Ricettario", versione:1, esportato:new Date().toISOString(), ricette:chosen };
+  if(withPhotos){
+    toast("Preparo le foto…");
+    const fotos={};
+    for(const r of chosen){
+      for(const fid of (r.foto||[])){
+        if(fotos[fid]) continue;
+        try{ const rec=await IDB.get(fid); if(rec&&rec.blob){ fotos[fid]=await blobToDataURL(rec.blob); } }
+        catch(e){ warn("lettura foto "+fid, e); }
+      }
+    }
+    payload.fotos=fotos;
+  }
+  return payload;
+}
+function exportFilename(){ return "ricette-"+new Date().toISOString().slice(0,10)+".json"; }
+
 async function doExport(){
   try{
-    const withPhotos = hasIDB && App.exportPhotos;
-    const chosen=App.recipes.filter(r=>App.exportSel.has(r.id))
-      .map(r=>{ const c=JSON.parse(JSON.stringify(r)); delete c.preferito; delete c.rating; delete c.aperture; // personali
-                if(!withPhotos) c.foto=[]; return c; });
-    if(!chosen.length){ toast("Seleziona almeno una ricetta"); return; }
-    const payload={ app:"Ricettario", versione:1, esportato:new Date().toISOString(), ricette:chosen };
-    if(withPhotos){
-      toast("Preparo le foto…");
-      const fotos={};
-      for(const r of chosen){
-        for(const fid of (r.foto||[])){
-          if(fotos[fid]) continue;
-          try{ const rec=await IDB.get(fid); if(rec&&rec.blob){ fotos[fid]=await blobToDataURL(rec.blob); } }
-          catch(e){ warn("lettura foto "+fid, e); }
-        }
-      }
-      payload.fotos=fotos;
-    }
-    const fname="ricette-"+new Date().toISOString().slice(0,10)+".json";
-    // downloadJSON ora restituisce una Promise: attendo così il catch è una vera rete di sicurezza.
-    // markBackupDone() resta interno e scatta solo su esito reale (annullamento non segna il backup).
-    await downloadJSON(payload, fname);
-  }catch(err){
-    warn("esportazione", err);
-    toast("Si è verificato un errore durante l'esportazione");
-  }
+    const payload=await buildExportPayload();
+    if(!payload){ toast("Seleziona almeno una ricetta"); return; }
+    // downloadJSON restituisce una Promise: l'await rende il catch una vera rete di sicurezza.
+    await downloadJSON(payload, exportFilename());
+  }catch(err){ warn("esportazione", err); toast("Si è verificato un errore durante l'esportazione"); }
+}
+/* copia il testo completo negli appunti (via pannello) — utile ovunque, anche in APK */
+async function copyExport(){
+  try{
+    const payload=await buildExportPayload();
+    if(!payload){ toast("Seleziona almeno una ricetta"); return; }
+    exportFallback(JSON.stringify(payload,null,2), exportFilename());
+  }catch(err){ warn("copia export", err); toast("Errore nella preparazione del backup"); }
 }
 
 /* ---------- IMPORTA ---------- */
@@ -2772,47 +2783,66 @@ function downloadJSON(obj, filename){
                : exportFallback(text, filename);  // browser/PWA: copia / scarica / condividi
 }
 
-/* App Android: scrive il backup nello spazio PERSISTENTE dell'app (non cache), poi condivide.
-   Restituisce una Promise: si risolve a operazione conclusa, rigetta solo su errore inatteso
-   (gli errori di scrittura "previsti" ripiegano sul pannello Copia, senza rompere il flusso).
-   markBackupDone() scatta SOLO a scrittura riuscita: se annulli la condivisione, il backup resta. */
+/* scrive testo in una cartella Cordova e restituisce l'URL del file */
+function writeFileTo(dir, name, text, ok, err){
+  window.resolveLocalFileSystemURL(dir, function(dirEntry){
+    dirEntry.getFile(name, {create:true, exclusive:false}, function(fileEntry){
+      fileEntry.createWriter(function(w){
+        w.onwriteend=function(){ ok(fileEntry.toURL()); };
+        w.onerror=err;
+        w.write(new Blob([text],{type:"application/json"}));
+      }, err);
+    }, err);
+  }, err);
+}
+/* App Android: 1) scrive il backup PERSISTENTE in externalDataDirectory (resta anche se annulli),
+   2) per la CONDIVISIONE scrive una copia in cacheDirectory, gestita in modo affidabile dal
+      FileProvider del plugin (evita il fallimento di WhatsApp/Outlook con external-data).
+   markBackupDone() scatta SOLO a scrittura riuscita: l'annullamento del menu non tocca il backup. */
 function cordovaBackup(text, shareName){
   return new Promise(function(resolve, reject){
     try{
-      const dir = cordova.file.externalDataDirectory || cordova.file.dataDirectory;
-      if(!dir){ exportFallback(text, shareName); return resolve(false); }
-      const fallback=function(e){ warn("scrittura backup", e); toast("Uso il pannello Copia"); exportFallback(text, shareName); resolve(false); };
-      window.resolveLocalFileSystemURL(dir, function(dirEntry){
-        dirEntry.getFile(BACKUP_FILENAME, {create:true, exclusive:false}, function(fileEntry){
-          fileEntry.createWriter(function(w){
-            w.onwriteend=function(){
-              markBackupDone();                       // il file esiste sul dispositivo
-              if(App.view==="share"){ try{ renderShare(); }catch(_){} } // aggiorno "ultimo backup"
-              toast("Backup salvato nell'app ✓");
-              shareFile(fileEntry.toURL());           // condivisione: l'annullamento non toglie il backup
-              resolve(true);
-            };
-            w.onerror=fallback;
-            w.write(new Blob([text],{type:"application/json"}));
-          }, fallback);
-        }, fallback);
-      }, fallback);
-    }catch(e){ reject(e); }   // errore davvero inatteso -> lo intercetta il catch di doExport
+      const persistDir = cordova.file.externalDataDirectory || cordova.file.dataDirectory;
+      if(!persistDir){ exportFallback(text, shareName); return resolve(false); }
+      const onWritten=function(){
+        markBackupDone();
+        if(App.view==="share"){ try{ renderShare(); }catch(_){} }
+        toast("Backup salvato nell'app ✓");
+        shareText(text, shareName);              // copia condivisibile in cache + menu Condividi
+        resolve(true);
+      };
+      const onFail=function(e){ warn("scrittura backup", e); toast("Uso il pannello Copia"); exportFallback(text, shareName); resolve(false); };
+      writeFileTo(persistDir, BACKUP_FILENAME, text, onWritten, onFail);
+    }catch(e){ reject(e); }   // errore davvero inatteso -> catch di doExport
   });
+}
+/* scrive una copia condivisibile in cache e apre il menu Condividi di Android */
+function shareText(text, shareName){
+  if(!(window.plugins && window.plugins.socialsharing)) return;
+  const dir = cordova.file.cacheDirectory || cordova.file.externalCacheDirectory;
+  if(!dir){ toast("Condivisione non disponibile: usa Copia"); return; }
+  writeFileTo(dir, shareName||BACKUP_FILENAME, text,
+    function(url){ shareFile(url); },
+    function(e){ warn("copia condivisione", e); toast("Condivisione non riuscita: usa Copia negli appunti"); });
 }
 function shareFile(url){
   if(window.plugins && window.plugins.socialsharing){
     window.plugins.socialsharing.shareWithOptions(
-      {message:"Backup Ricettario", subject:"Backup Ricettario", files:[url]},
+      {subject:"Backup Ricettario", files:[url]},
       function(){}, function(){});
   }
 }
-/* ricondivide l'ultimo backup già scritto, senza rigenerarlo */
+/* ricondivide l'ultimo backup persistente: lo rilegge e lo condivide (via copia in cache) */
 function shareLastBackup(){
   const base = window.cordova && cordova.file && (cordova.file.externalDataDirectory||cordova.file.dataDirectory);
   if(!base){ toast("Non disponibile qui"); return; }
   window.resolveLocalFileSystemURL(base + BACKUP_FILENAME, function(fe){
-    shareFile(fe.toURL());
+    fe.file(function(file){
+      const r=new FileReader();
+      r.onloadend=function(){ shareText(String(r.result||""), BACKUP_FILENAME); };
+      r.onerror=function(){ toast("Backup non leggibile"); };
+      r.readAsText(file);
+    }, function(){ toast("Backup non leggibile"); });
   }, function(){ toast("Nessun backup salvato: premi Esporta"); });
 }
 
