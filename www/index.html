@@ -431,6 +431,31 @@
   .info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:16px}
   .info-list{margin:6px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:7px}
   .info-list li{font-size:14.5px;line-height:1.45}
+
+  /* --- opzioni: segmenti, select, valore, azzeramenti --- */
+  .opt-row.col{display:block}
+  .opt-row.col .opt-txt{margin-bottom:8px}
+  .seg{display:inline-flex;flex-wrap:wrap;gap:4px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:3px}
+  .seg-btn{border:0;background:transparent;color:var(--muted);font:inherit;font-weight:600;font-size:13.5px;padding:7px 14px;border-radius:8px;cursor:pointer}
+  .seg-btn.on{background:var(--primary);color:#fff}
+  .opt-val{flex:0 0 auto;font-family:"Space Mono",monospace;font-size:13px;color:var(--muted)}
+  .mini-sel{width:auto;flex:0 0 auto;padding:6px 10px}
+  .danger-zone h2{color:var(--primary)}
+  .backup-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    background:#FDF6E7;border:1px solid #EBD6A6;color:#7a5a11;border-radius:12px;padding:11px 14px;margin-bottom:16px;font-size:14px}
+  body.theme-dark .backup-banner{background:#2c2413;border-color:#4a3d1c;color:#e7cf8f}
+  .backup-banner .bb-actions{display:flex;gap:8px}
+  body.no-anim *{transition:none !important;animation:none !important}
+
+  /* --- modale export --- */
+  .modal-overlay{position:fixed;inset:0;z-index:120;background:rgba(20,16,12,.55);
+    display:flex;align-items:center;justify-content:center;padding:18px}
+  .modal{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    width:100%;max-width:560px;max-height:88vh;overflow:auto;padding:20px;box-shadow:var(--shadow)}
+  .modal h2{margin-bottom:6px}
+  .modal textarea{width:100%;height:200px;margin-top:10px;font-family:"Space Mono",monospace;font-size:12px;
+    border:1px solid var(--line-strong);border-radius:10px;padding:10px;background:var(--paper);color:var(--ink);resize:vertical}
+  .modal-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
   .share-row.is-done{opacity:.5}
   .share-row.is-done .sr-name{text-decoration:line-through}
   .share-row input[type=checkbox]{accent-color:var(--primary)}
@@ -711,7 +736,8 @@ const IDB = {
   },
   async put(rec){ const db=await this.open(); return new Promise((res,rej)=>{ const t=db.transaction("fotos","readwrite"); t.objectStore("fotos").put(rec); t.oncomplete=()=>res(); t.onerror=()=>rej(t.error); }); },
   async get(id){ try{ const db=await this.open(); return await new Promise((res,rej)=>{ const t=db.transaction("fotos","readonly"); const rq=t.objectStore("fotos").get(id); rq.onsuccess=()=>res(rq.result||null); rq.onerror=()=>rej(rq.error); }); }catch(e){ warn("IDB.get",e); return null; } },
-  async del(id){ try{ const db=await this.open(); return await new Promise((res)=>{ const t=db.transaction("fotos","readwrite"); t.objectStore("fotos").delete(id); t.oncomplete=()=>res(); t.onerror=()=>res(); }); }catch(e){ warn("IDB.del",e); } }
+  async del(id){ try{ const db=await this.open(); return await new Promise((res)=>{ const t=db.transaction("fotos","readwrite"); t.objectStore("fotos").delete(id); t.oncomplete=()=>res(); t.onerror=()=>res(); }); }catch(e){ warn("IDB.del",e); } },
+  async clear(){ try{ const db=await this.open(); return await new Promise((res)=>{ const t=db.transaction("fotos","readwrite"); t.objectStore("fotos").clear(); t.oncomplete=()=>res(); t.onerror=()=>res(); }); }catch(e){ warn("IDB.clear",e); } }
 };
 
 /* comprime un file immagine in JPEG ridimensionato (lato lungo max ~1200px) */
@@ -805,9 +831,10 @@ const Speech = {
     try{ if(this._hasPlugin() && window.TTS.stop) window.TTS.stop(); }catch(e){}
     try{ if(this._hasWeb()) window.speechSynthesis.cancel(); }catch(e){}
   },
+  _rate(){ try{ return (App&&App.settings&&App.settings.voceRate)||1; }catch(e){ return 1; } },
   _utter(text){
     const u=new SpeechSynthesisUtterance(text);
-    u.lang="it-IT"; u.rate=1; u.pitch=1;
+    u.lang="it-IT"; u.rate=this._rate(); u.pitch=1;
     if(!this._loaded) this._loadVoices();
     if(this._voice) u.voice=this._voice;
     return u;
@@ -817,7 +844,7 @@ const Speech = {
     this.stop();
     if(this._hasPlugin()){
       this._speakingFlag=true;
-      try{ const p=window.TTS.speak({text, locale:"it-IT", rate:1.0}); if(p&&p.then) p.then(()=>{this._speakingFlag=false;},()=>{this._speakingFlag=false;}); }
+      try{ const p=window.TTS.speak({text, locale:"it-IT", rate:this._rate()}); if(p&&p.then) p.then(()=>{this._speakingFlag=false;},()=>{this._speakingFlag=false;}); }
       catch(e){ this._speakingFlag=false; if(this._hasWeb()) window.speechSynthesis.speak(this._utter(text)); }
       return;
     }
@@ -833,7 +860,7 @@ const Speech = {
       if(onStep) try{ onStep(i); }catch(e){}
       if(this._hasPlugin()){
         this._speakingFlag=true;
-        try{ const p=window.TTS.speak({text:texts[i], locale:"it-IT", rate:1.0});
+        try{ const p=window.TTS.speak({text:texts[i], locale:"it-IT", rate:this._rate()});
              if(p&&p.then) p.then(()=>{ i++; next(); },()=>{ this._speakingFlag=false; }); else { i++; next(); } }
         catch(e){ this._speakingFlag=false; }
       } else {
@@ -923,7 +950,7 @@ const App = {
   spesa: [],           // lista della spesa: {n,u,q,checked,manual}
   plan: null,          // pianificazione settimanale: {lun:{colazione:[id],pranzo:[],cena:[]},...}
   planSpesa: [],       // lista della spesa generata dai pasti pianificati (separata)
-  settings:{autoLeggi:false, tema:"chiaro"}, // preferenze (lettura automatica, tema)
+  settings:{autoLeggi:false, tema:"chiaro", testo:"normale", ridotto:false, voceRate:1, cucinaAuto:false, cucinaAutoSec:20, ordine:"nome", backupReminder:true, lastBackup:0}, // preferenze
   spesaSel: null,      // Map id -> porzioni, per comporre la lista
   cookActive:false,    // modalità cucina attiva
   cookStep:0,          // passaggio corrente in modalità cucina
@@ -943,8 +970,9 @@ const App = {
     try{ this.plan = JSON.parse(await Store.get(PIANO_KEY)) || null; }catch(e){ this.plan=null; }
     try{ this.planSpesa = JSON.parse(await Store.get(PIANO_SPESA_KEY)) || []; }catch(e){ this.planSpesa=[]; }
     this.ensurePlan();
-    try{ this.settings = Object.assign({autoLeggi:false, tema:"chiaro"}, JSON.parse(await Store.get(IMPOST_KEY))||{}); }catch(e){ this.settings={autoLeggi:false, tema:"chiaro"}; }
-    applyTheme();
+    try{ this.settings = Object.assign({autoLeggi:false, tema:"chiaro", testo:"normale", ridotto:false, voceRate:1, cucinaAuto:false, cucinaAutoSec:20, ordine:"nome", backupReminder:true, lastBackup:0}, JSON.parse(await Store.get(IMPOST_KEY))||{}); }catch(e){ this.settings={autoLeggi:false, tema:"chiaro", testo:"normale", ridotto:false, voceRate:1, cucinaAuto:false, cucinaAutoSec:20, ordine:"nome", backupReminder:true, lastBackup:0}; }
+    applyPrefs();
+    try{ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{ if(App.settings.tema==="auto") applyTheme(); }); }catch(e){}
     Speech.init();
     await this.migrate();     // versionamento dati + migrazioni automatiche
     this.go("browse");
@@ -1203,6 +1231,23 @@ function niceRound(v, unit){
 function smartScale(q, unit, factor){ return niceRound(q*factor, unit); }
 
 
+let _backupDismissed=false;
+function backupBannerHTML(){
+  const S=App.settings||{};
+  if(!S.backupReminder || _backupDismissed || !App.recipes.length) return "";
+  const d=daysSince(S.lastBackup);
+  const overdue = (d===null) || d>=14;   // mai, oppure oltre 2 settimane
+  if(!overdue) return "";
+  const msg = d===null ? "Non hai ancora fatto un backup delle tue ricette."
+                       : `Ultimo backup ${d} giorni fa.`;
+  return `<div class="backup-banner no-print">
+    <span>${msg} Un export mette al sicuro tutto.</span>
+    <span class="bb-actions">
+      <button class="btn sm primary" onclick="App.openShare('export')">Esporta ora</button>
+      <button class="btn sm" onclick="dismissBackup()">Più tardi</button>
+    </span></div>`;
+}
+function dismissBackup(){ _backupDismissed=true; const b=document.querySelector('.backup-banner'); if(b) b.remove(); }
 function renderBrowse(){
   const app=document.getElementById("app");
   const cats=["all",...Array.from(new Set(App.recipes.map(r=>r.categoria))).sort()];
@@ -1211,6 +1256,7 @@ function renderBrowse(){
   const nFav=App.recipes.filter(r=>r.preferito).length;
 
   app.innerHTML=`
+    ${backupBannerHTML()}
     <div class="toolbar">
       <div class="search">${I.search}
         <input id="q" type="search" placeholder="Cerca per nome, ingrediente o etichetta…" value="${esc(f.q)}" autocomplete="off">
@@ -1259,7 +1305,14 @@ function computeList(f){
     return true;
   });
   if(f.q) list=smartSearch(f.q, list);                 // ricerca tollerante ad accenti e refusi
-  if(f.vista==="recenti") list.sort((a,b)=>App.recents.indexOf(a.id)-App.recents.indexOf(b.id));
+  if(f.vista==="recenti"){ list.sort((a,b)=>App.recents.indexOf(a.id)-App.recents.indexOf(b.id)); }
+  else {
+    const ord=(App.settings&&App.settings.ordine)||"nome";
+    if(ord==="aperte") list.sort((a,b)=>(b.aperture||0)-(a.aperture||0) || a.nome.localeCompare(b.nome,'it'));
+    else if(ord==="recenti") list.sort((a,b)=>{ const ia=App.recents.indexOf(a.id), ib=App.recents.indexOf(b.id);
+      const va=ia<0?9999:ia, vb=ib<0?9999:ib; return va-vb || a.nome.localeCompare(b.nome,'it'); });
+    else list.sort((a,b)=>a.nome.localeCompare(b.nome,'it'));
+  }
   return list;
 }
 function updateGrid(){
@@ -1504,6 +1557,7 @@ function setBackgroundInert(on){
 async function endCook(){
   App.cookActive=false;
   Speech.stop();
+  clearTimeout(App._cookTimer);
   const el=document.getElementById("cook");
   el.classList.add("hidden"); el.setAttribute("aria-hidden","true"); el.innerHTML="";
   document.body.classList.remove("cooking");
@@ -1601,6 +1655,11 @@ function renderCook(){
   stage.onclick=()=>{ if(!isLast) cookGo(1); };
   // lettura automatica del passaggio, se attiva
   if(App.settings.autoLeggi && Speech.supported()){ Speech.speak(stepSpeakText(p)); }
+  // avanzamento automatico, se attivo
+  clearTimeout(App._cookTimer);
+  if(App.settings.cucinaAuto && !isLast){
+    App._cookTimer=setTimeout(()=>{ if(App.cookActive) cookGo(1); }, (App.settings.cucinaAutoSec||20)*1000);
+  }
 }
 function cookSpeak(){
   const r=App.find(App.currentId); if(!r) return;
@@ -2324,29 +2383,64 @@ function renderStats(){
 
 /* ===================== Opzioni ===================== */
 function applyTheme(){
-  document.body.classList.toggle("theme-dark", App.settings.tema==="scuro");
+  let dark = App.settings.tema==="scuro";
+  if(App.settings.tema==="auto"){ try{ dark = window.matchMedia("(prefers-color-scheme: dark)").matches; }catch(e){} }
+  document.body.classList.toggle("theme-dark", dark);
 }
-async function setTema(scuro){
-  App.settings.tema = scuro ? "scuro" : "chiaro";
+function applyPrefs(){
   applyTheme();
-  await App.saveSettings();
-  if(App.view==="opzioni") renderOpzioni();
+  document.body.classList.toggle("no-anim", !!App.settings.ridotto);
+  const z = App.settings.testo==="grande" ? "1.12" : App.settings.testo==="xl" ? "1.25" : "1";
+  document.body.style.zoom = z;   // scala testo e impaginazione (con reflow), robusto su WebView
 }
-async function setAutoLeggiOpt(on){
-  App.settings.autoLeggi = !!on;
-  await App.saveSettings();
-  if(App.view==="opzioni") renderOpzioni();
-}
-function switchRow(id, label, desc, on, handler, disabled){
+async function setTema(v){ App.settings.tema=v; applyTheme(); await App.saveSettings(); if(App.view==="opzioni") renderOpzioni(); }
+async function setTesto(v){ App.settings.testo=v; applyPrefs(); await App.saveSettings(); if(App.view==="opzioni") renderOpzioni(); }
+async function setRidotto(on){ App.settings.ridotto=!!on; applyPrefs(); await App.saveSettings(); if(App.view==="opzioni") renderOpzioni(); }
+async function setVoceRate(v){ App.settings.voceRate=v; await App.saveSettings(); if(App.view==="opzioni") renderOpzioni(); }
+async function setOrdine(v){ App.settings.ordine=v; await App.saveSettings(); if(App.view==="opzioni") renderOpzioni(); }
+async function setCucinaAuto(on){ App.settings.cucinaAuto=!!on; await App.saveSettings(); if(App.view==="opzioni") renderOpzioni(); }
+async function setCucinaAutoSec(v){ App.settings.cucinaAutoSec=parseInt(v)||20; await App.saveSettings(); }
+async function setAutoLeggiOpt(on){ App.settings.autoLeggi=!!on; await App.saveSettings(); if(App.view==="opzioni") renderOpzioni(); }
+async function setBackupReminder(on){ App.settings.backupReminder=!!on; await App.saveSettings(); if(App.view==="opzioni") renderOpzioni(); }
+
+function daysSince(ts){ if(!ts) return null; return Math.floor((Date.now()-ts)/86400000); }
+function switchRow(label, desc, on, handler, disabled){
   return `<div class="opt-row ${disabled?'is-disabled':''}">
     <div class="opt-txt"><div class="opt-lbl">${label}</div><div class="opt-desc">${desc}</div></div>
     <button class="switch ${on?'on':''}" role="switch" aria-checked="${on?'true':'false'}" ${disabled?'disabled':''} onclick="${handler}"><span class="knob"></span></button>
   </div>`;
 }
+function segRow(label, desc, options, current, fn){
+  const seg=options.map(([val,txt])=>`<button class="seg-btn ${String(current)===String(val)?'on':''}" onclick="${fn}('${val}')">${txt}</button>`).join("");
+  return `<div class="opt-row col">
+    <div class="opt-txt"><div class="opt-lbl">${label}</div><div class="opt-desc">${desc}</div></div>
+    <div class="seg">${seg}</div>
+  </div>`;
+}
+async function resetPersonali(){
+  if(!confirm("Azzerare preferiti, voti, numero aperture e recenti? Le ricette, le note e le foto restano.")) return;
+  App.recipes.forEach(r=>{ r.preferito=false; r.rating=0; r.aperture=0; });
+  App.recents=[];
+  await App.save(); await App.saveRecents();
+  toast("Dati personali azzerati");
+  if(App.view==="opzioni") renderOpzioni();
+}
+async function deleteAllPhotos(){
+  const conPhoto=App.recipes.filter(r=>Array.isArray(r.foto)&&r.foto.length).length;
+  if(!conPhoto){ toast("Non ci sono foto da eliminare"); return; }
+  if(!confirm(`Eliminare TUTTE le foto (${conPhoto} ricette)? L'operazione non è reversibile. Le ricette restano.`)) return;
+  await IDB.clear();
+  App.recipes.forEach(r=>{ r.foto=[]; });
+  await App.save();
+  toast("Tutte le foto sono state eliminate");
+  if(App.view==="opzioni") renderOpzioni();
+}
+
 function renderOpzioni(){
   const app=document.getElementById("app");
-  const dark = App.settings.tema==="scuro";
-  const voce = Speech.supported();
+  const S=App.settings, voce=Speech.supported();
+  const nBackup=daysSince(S.lastBackup);
+  const backupTxt = S.lastBackup ? (nBackup===0?"oggi":nBackup===1?"ieri":`${nBackup} giorni fa`) : "mai";
   app.innerHTML=`
     <button class="back no-print" onclick="App.go('browse')">${I.back} Torna al ricettario</button>
     <h1 style="font-size:30px;margin-bottom:4px">Opzioni</h1>
@@ -2354,21 +2448,44 @@ function renderOpzioni(){
 
     <div class="panel">
       <h2>Aspetto</h2>
-      ${switchRow("tema","Modalità notturna","Tema scuro, più riposante di sera e con meno consumo su schermi OLED.",dark,"setTema(!("+dark+"))")}
+      ${segRow("Tema","Chiaro, scuro oppure automatico (segue il telefono).",[["chiaro","Chiaro"],["scuro","Scuro"],["auto","Auto"]],S.tema,"setTema")}
+      ${segRow("Dimensione del testo","Ingrandisci tutto per leggere meglio, utile in cucina.",[["normale","Normale"],["grande","Grande"],["xl","Molto grande"]],S.testo,"setTesto")}
+      ${switchRow("Riduci animazioni","Interfaccia più statica; utile su dispositivi meno recenti.",S.ridotto,"setRidotto(!"+S.ridotto+")")}
+    </div>
+
+    <div class="panel">
+      <h2>Ricettario</h2>
+      ${segRow("Ordinamento predefinito","Come ordinare le ricette nell'elenco.",[["nome","Nome"],["recenti","Recenti"],["aperte","Più aperte"]],S.ordine,"setOrdine")}
     </div>
 
     <div class="panel">
       <h2>Modalità cucina</h2>
-      ${switchRow("autoleggi","Lettura automatica dei passaggi","Legge da solo ogni nuovo passaggio in modalità cucina."+(voce?"":" (non disponibile su questo dispositivo)"),App.settings.autoLeggi,"setAutoLeggiOpt(!"+App.settings.autoLeggi+")", !voce)}
+      ${switchRow("Lettura automatica dei passaggi","Legge da solo ogni nuovo passaggio."+(voce?"":" (voce non disponibile su questo dispositivo)"),S.autoLeggi,"setAutoLeggiOpt(!"+S.autoLeggi+")",!voce)}
+      ${segRow("Velocità della voce","Ritmo della lettura vocale.",[["0.8","Lenta"],["1","Normale"],["1.2","Veloce"]],S.voceRate,"setVoceRate")}
+      ${switchRow("Avanzamento automatico","Passa da solo al passaggio successivo dopo un po'.",S.cucinaAuto,"setCucinaAuto(!"+S.cucinaAuto+")")}
+      ${S.cucinaAuto?`<div class="opt-row"><div class="opt-txt"><div class="opt-lbl">Intervallo</div><div class="opt-desc">Secondi prima di avanzare.</div></div>
+        <select class="control mini-sel" onchange="setCucinaAutoSec(this.value)">
+          ${[10,15,20,30,45,60].map(s=>`<option value="${s}" ${S.cucinaAutoSec===s?'selected':''}>${s}s</option>`).join("")}
+        </select></div>`:""}
     </div>
 
     <div class="panel">
-      <h2>Dati</h2>
+      <h2>Dati e backup</h2>
+      ${switchRow("Promemoria backup","Ti avvisa nella home se è passato troppo tempo dall'ultimo export.",S.backupReminder,"setBackupReminder(!"+S.backupReminder+")")}
+      <div class="opt-row"><div class="opt-txt"><div class="opt-lbl">Ultimo backup</div><div class="opt-desc">Esporta le ricette dalla sezione Scambia.</div></div>
+        <span class="opt-val">${backupTxt}</span></div>
       <div class="opt-actions">
-        <button class="btn" onclick="App.openShare('export')">↔ Esporta / importa ricette</button>
-        <button class="btn" onclick="App.go('stats')">📊 Statistiche d'uso</button>
+        <button class="btn" onclick="App.openShare('export')">↔ Esporta / importa</button>
+        <button class="btn" onclick="App.go('stats')">📊 Statistiche</button>
       </div>
-      <p class="hint" style="margin-top:10px">Le ricette restano sul dispositivo. Esporta ogni tanto un backup dalla sezione Scambia.</p>
+    </div>
+
+    <div class="panel danger-zone">
+      <h2>Azzeramenti</h2>
+      <div class="opt-row"><div class="opt-txt"><div class="opt-lbl">Azzera dati personali</div><div class="opt-desc">Preferiti, voti, aperture e recenti. Ricette, note e foto restano.</div></div>
+        <button class="btn sm danger" onclick="resetPersonali()">Azzera</button></div>
+      <div class="opt-row"><div class="opt-txt"><div class="opt-lbl">Elimina tutte le foto</div><div class="opt-desc">Libera spazio. Le ricette restano senza immagini.</div></div>
+        <button class="btn sm danger" onclick="deleteAllPhotos()">Elimina foto</button></div>
     </div>
   `;
 }
@@ -2490,6 +2607,7 @@ async function doExport(){
   }
   const fname="ricette-"+new Date().toISOString().slice(0,10)+".json";
   downloadJSON(payload, fname);
+  App.settings.lastBackup=Date.now(); App.saveSettings();   // per il promemoria backup
 }
 
 /* ---------- IMPORTA ---------- */
@@ -2622,14 +2740,47 @@ function downloadJSON(obj, filename){
     cordovaSaveShare(text, filename);
     return;
   }
-  // Browser / WebView generica: download via blob
+  // Browser / WebView generica: mostro un pannello con Copia/Condividi/Scarica
+  exportFallback(text, filename);
+}
+function exportFallback(text, filename){
+  const old=document.getElementById("exportModal"); if(old) old.remove();
+  const wrap=document.createElement("div");
+  wrap.id="exportModal"; wrap.className="modal-overlay";
+  wrap.innerHTML=`
+    <div class="modal">
+      <h2>Backup delle ricette</h2>
+      <p class="hint">Il modo più sicuro: <b>Copia negli appunti</b> e incolla in una mail a te stesso, in Note o su Drive. In alternativa usa Condividi o Scarica.</p>
+      <textarea id="exportText" readonly spellcheck="false"></textarea>
+      <div class="modal-actions">
+        <button class="btn primary" id="btnCopy">Copia negli appunti</button>
+        <button class="btn" id="btnShare" style="display:none">Condividi / Salva</button>
+        <button class="btn" id="btnDl">Scarica file</button>
+        <button class="btn ghost" id="btnClose">Chiudi</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+  const ta=wrap.querySelector("#exportText"); ta.value=text;
+  wrap.querySelector("#btnClose").onclick=()=>wrap.remove();
+  wrap.onclick=(e)=>{ if(e.target===wrap) wrap.remove(); };
+  wrap.querySelector("#btnCopy").onclick=async ()=>{
+    let ok=false;
+    try{ if(navigator.clipboard && navigator.clipboard.writeText){ await navigator.clipboard.writeText(text); ok=true; } }catch(e){}
+    if(!ok){ try{ ta.focus(); ta.select(); ta.setSelectionRange(0,text.length); ok=document.execCommand("copy"); }catch(e){} }
+    toast(ok?"Copiato negli appunti":"Seleziona il testo e copialo a mano");
+  };
+  wrap.querySelector("#btnDl").onclick=()=>{
+    try{ const blob=new Blob([text],{type:"application/json"}); const url=URL.createObjectURL(blob);
+      const a=document.createElement("a"); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      toast("Se non parte il download, usa Copia"); }catch(e){ toast("Download non disponibile: usa Copia"); }
+  };
   try{
-    const blob=new Blob([text],{type:"application/json"});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement("a"); a.href=url; a.download=filename; a.click();
-    URL.revokeObjectURL(url);
-    toast("File esportato");
-  }catch(e){ toast("Esportazione non riuscita"); }
+    const file=new File([text], filename, {type:"application/json"});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      const b=wrap.querySelector("#btnShare"); b.style.display="";
+      b.onclick=async ()=>{ try{ await navigator.share({files:[file], title:"Ricette dal Ricettario"}); }catch(e){} };
+    }
+  }catch(e){}
 }
 function cordovaSaveShare(text, filename){
   const dir = (window.cordova.file && (cordova.file.externalCacheDirectory||cordova.file.cacheDirectory)) || null;
