@@ -2795,30 +2795,28 @@ function writeFileTo(dir, name, text, ok, err){
     }, err);
   }, err);
 }
-/* App Android: 1) scrive il backup PERSISTENTE in externalDataDirectory (resta anche se annulli),
-   2) per la CONDIVISIONE scrive una copia in cacheDirectory, gestita in modo affidabile dal
-      FileProvider del plugin (evita il fallimento di WhatsApp/Outlook con external-data).
-   markBackupDone() scatta SOLO a scrittura riuscita: l'annullamento del menu non tocca il backup. */
+/* App Android: scrive il backup PERSISTENTE in externalDataDirectory (resta anche se annulli),
+   poi apre il pannello affidabile (Copia + Condividi/Salva). Niente auto-condivisione col plugin,
+   che su molti dispositivi non allega il file. markBackupDone() scatta alla scrittura riuscita. */
 function cordovaBackup(text, shareName){
   return new Promise(function(resolve, reject){
     try{
       const persistDir = cordova.file.externalDataDirectory || cordova.file.dataDirectory;
-      if(!persistDir){ exportFallback(text, shareName); return resolve(false); }
+      if(!persistDir){ return resolve(exportFallback(text, shareName)); }
       const onWritten=function(){
         markBackupDone();
         if(App.view==="share"){ try{ renderShare(); }catch(_){} }
         toast("Backup salvato nell'app ✓");
-        shareText(text, shareName);              // copia condivisibile in cache + menu Condividi
-        resolve(true);
+        resolve(exportFallback(text, shareName));   // pannello: Copia / Condividi-Salva
       };
-      const onFail=function(e){ warn("scrittura backup", e); toast("Uso il pannello Copia"); exportFallback(text, shareName); resolve(false); };
+      const onFail=function(e){ warn("scrittura backup", e); resolve(exportFallback(text, shareName)); };
       writeFileTo(persistDir, BACKUP_FILENAME, text, onWritten, onFail);
-    }catch(e){ reject(e); }   // errore davvero inatteso -> catch di doExport
+    }catch(e){ reject(e); }
   });
 }
-/* scrive una copia condivisibile in cache e apre il menu Condividi di Android */
+/* condivisione col plugin (ultima spiaggia): copia in cache e apre il menu Android */
 function shareText(text, shareName){
-  if(!(window.plugins && window.plugins.socialsharing)) return;
+  if(!(window.plugins && window.plugins.socialsharing)){ toast("Condivisione non disponibile: usa Copia"); return; }
   const dir = cordova.file.cacheDirectory || cordova.file.externalCacheDirectory;
   if(!dir){ toast("Condivisione non disponibile: usa Copia"); return; }
   writeFileTo(dir, shareName||BACKUP_FILENAME, text,
@@ -2827,19 +2825,17 @@ function shareText(text, shareName){
 }
 function shareFile(url){
   if(window.plugins && window.plugins.socialsharing){
-    window.plugins.socialsharing.shareWithOptions(
-      {subject:"Backup Ricettario", files:[url]},
-      function(){}, function(){});
+    window.plugins.socialsharing.shareWithOptions({subject:"Backup Ricettario", files:[url]}, function(){}, function(){});
   }
 }
-/* ricondivide l'ultimo backup persistente: lo rilegge e lo condivide (via copia in cache) */
+/* ricondivide l'ultimo backup persistente: lo rilegge e riapre il pannello Copia/Condividi */
 function shareLastBackup(){
   const base = window.cordova && cordova.file && (cordova.file.externalDataDirectory||cordova.file.dataDirectory);
   if(!base){ toast("Non disponibile qui"); return; }
   window.resolveLocalFileSystemURL(base + BACKUP_FILENAME, function(fe){
     fe.file(function(file){
       const r=new FileReader();
-      r.onloadend=function(){ shareText(String(r.result||""), BACKUP_FILENAME); };
+      r.onloadend=function(){ exportFallback(String(r.result||""), BACKUP_FILENAME); };
       r.onerror=function(){ toast("Backup non leggibile"); };
       r.readAsText(file);
     }, function(){ toast("Backup non leggibile"); });
@@ -2849,19 +2845,22 @@ function shareLastBackup(){
 function exportFallback(text, filename){
   return new Promise(function(resolve){
     const old=document.getElementById("exportModal"); if(old) old.remove();
+    const isApp = !!(window.cordova);
     let canWebShare=false;
     try{ const f=new File([text],filename,{type:"application/json"}); canWebShare=!!(navigator.canShare && navigator.canShare({files:[f]})); }catch(e){}
+    const canPlugin = !!(window.plugins && window.plugins.socialsharing);
+    const showShare = canWebShare || canPlugin;
     const wrap=document.createElement("div");
     wrap.id="exportModal"; wrap.className="modal-overlay";
     wrap.innerHTML=`
       <div class="modal">
         <h2>Backup delle ricette</h2>
-        <p class="hint">Consigliato: <b>Copia negli appunti</b> e incolla in una mail a te stesso, in Note o su Drive. In alternativa Condividi/Salva o Scarica.</p>
+        <p class="hint"><b>Copia negli appunti</b> è il metodo garantito: incolla in una mail a te stesso, in Note o su Drive. In alternativa Condividi/Salva.</p>
         <textarea id="exportText" readonly spellcheck="false"></textarea>
         <div class="modal-actions">
           <button class="btn primary" id="btnCopy">Copia negli appunti</button>
-          ${canWebShare?`<button class="btn" id="btnShare">Condividi / Salva</button>`:``}
-          <button class="btn" id="btnDl">Scarica file</button>
+          ${showShare?`<button class="btn" id="btnShare">Condividi / Salva</button>`:``}
+          ${isApp?``:`<button class="btn" id="btnDl">Scarica file</button>`}
           <button class="btn ghost" id="btnClose">Chiudi</button>
         </div>
       </div>`;
@@ -2877,17 +2876,33 @@ function exportFallback(text, filename){
       if(ok){ markBackupDone(); if(App.view==="share"){ try{ renderShare(); }catch(_){} } }
       toast(ok?"Copiato ✓ — incollalo in un posto sicuro":"Seleziona il testo e copialo a mano");
     };
-    wrap.querySelector("#btnDl").onclick=()=>{
+    const dl=wrap.querySelector("#btnDl");
+    if(dl){ dl.onclick=()=>{
       try{
         const blob=new Blob([text],{type:"application/json"}); const url=URL.createObjectURL(blob);
         const a=document.createElement("a"); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
         URL.revokeObjectURL(url); markBackupDone(); if(App.view==="share"){ try{ renderShare(); }catch(_){} }
-        toast("Scaricato (se non parte, usa Copia)");
+        toast("Scaricato");
       }catch(e){ toast("Download non disponibile: usa Copia"); }
-    };
+    }; }
     const sb=wrap.querySelector("#btnShare");
-    if(sb){ sb.onclick=()=>{ try{ const f=new File([text],filename,{type:"application/json"});
-      navigator.share({files:[f], title:"Ricette dal Ricettario"}).then(()=>{ markBackupDone(); },()=>{}); }catch(e){} }; }
+    if(sb){
+      sb.onclick=async ()=>{
+        // 1) Web Share nativa con file (affidabile nella WebView Chromium moderna e nel browser),
+        //    attivata da QUESTO tocco -> il "gesto utente" è preservato.
+        try{
+          const f=new File([text],filename,{type:"application/json"});
+          if(navigator.canShare && navigator.canShare({files:[f]})){
+            await navigator.share({files:[f], title:"Ricette dal Ricettario"});
+            markBackupDone(); if(App.view==="share"){ try{ renderShare(); }catch(_){} }
+            return;
+          }
+        }catch(e){ /* annullato o non supportato: passo al plugin */ }
+        // 2) ultima spiaggia: plugin di condivisione Cordova
+        if(window.plugins && window.plugins.socialsharing){ shareText(text, filename); }
+        else toast("Condivisione non riuscita: usa Copia negli appunti");
+      };
+    }
   });
 }
 
