@@ -2783,12 +2783,13 @@ function downloadJSON(obj, filename){
                : exportFallback(text, filename);  // browser/PWA: copia / scarica / condividi
 }
 
-/* scrive testo in una cartella Cordova e restituisce l'URL del file */
+/* scrive testo in una cartella Cordova e restituisce il VERO percorso file:// (nativeURL),
+   necessario ai plugin nativi: sotto lo schema https, toURL() darebbe un URL non allegabile. */
 function writeFileTo(dir, name, text, ok, err){
   window.resolveLocalFileSystemURL(dir, function(dirEntry){
     dirEntry.getFile(name, {create:true, exclusive:false}, function(fileEntry){
       fileEntry.createWriter(function(w){
-        w.onwriteend=function(){ ok(fileEntry.toURL()); };
+        w.onwriteend=function(){ ok(fileEntry.nativeURL || fileEntry.toURL()); };
         w.onerror=err;
         w.write(new Blob([text],{type:"application/json"}));
       }, err);
@@ -2888,19 +2889,18 @@ function exportFallback(text, filename){
     const sb=wrap.querySelector("#btnShare");
     if(sb){
       sb.onclick=async ()=>{
-        // 1) Web Share nativa con file (affidabile nella WebView Chromium moderna e nel browser),
-        //    attivata da QUESTO tocco -> il "gesto utente" è preservato.
-        try{
-          const f=new File([text],filename,{type:"application/json"});
-          if(navigator.canShare && navigator.canShare({files:[f]})){
+        const f=(function(){ try{ return new File([text],filename,{type:"application/json"}); }catch(e){ return null; } })();
+        // 1) Web Share nativa con file, se davvero supportata (attivata da QUESTO tocco).
+        if(f && navigator.canShare && navigator.canShare({files:[f]}) && navigator.share){
+          try{
             await navigator.share({files:[f], title:"Ricette dal Ricettario"});
             markBackupDone(); if(App.view==="share"){ try{ renderShare(); }catch(_){} }
-            return;
-          }
-        }catch(e){ /* annullato o non supportato: passo al plugin */ }
-        // 2) ultima spiaggia: plugin di condivisione Cordova
+          }catch(e){ /* annullato o rifiutato: non riprovo, per non aprire due menu */ }
+          return;
+        }
+        // 2) altrimenti plugin nativo, con il VERO percorso file:// (nativeURL)
         if(window.plugins && window.plugins.socialsharing){ shareText(text, filename); }
-        else toast("Condivisione non riuscita: usa Copia negli appunti");
+        else toast("Condivisione non disponibile: usa Copia negli appunti");
       };
     }
   });
