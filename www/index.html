@@ -45,6 +45,21 @@
   body.theme-dark .card .thumb{background:linear-gradient(135deg,#2b2521,#221d18)}
   body.theme-dark .card.bimby .thumb{background:linear-gradient(135deg,#123230,#0f2a27)}
   body.theme-dark .dg-main,body.theme-dark .dg-thumb,body.theme-dark .foto-item{background-color:#2b2521}
+  /* rifiniture tema scuro: niente lampi chiari, contrasti coerenti */
+  body.theme-dark .card{background:radial-gradient(120% 120% at 80% 0%, rgba(255,255,255,.04), transparent 60%), linear-gradient(135deg,#241f1a,#1d1915)}
+  body.theme-dark .card .thumb.photo{background:#2b2521 center/cover no-repeat}
+  body.theme-dark .fav-btn{background:rgba(255,255,255,.12)}
+  body.theme-dark .btn:hover{background:#2c2621}
+  body.theme-dark .btn.primary:hover{background:#c85942}
+  body.theme-dark .share-row:hover{background:#2c2621}
+  body.theme-dark .badge{background:rgba(255,255,255,.10);color:var(--ink)}
+  body.theme-dark .btn.iconlabel.fav-on{color:var(--gold);border-color:#4a3d1c;background:#2c2413}
+  body.theme-dark .sbadge.name{background:#3a2f14;color:#e7c877}
+  body.theme-dark .sbadge.dup{background:#2f2a22;color:var(--muted)}
+  body.theme-dark .iconbtn:hover{border-color:var(--primary);background:var(--primary-soft)}
+  body.theme-dark .btn.danger{border-color:#5a2f2a}
+  body.theme-dark .plan-chip{background:var(--primary-soft)}
+  body.theme-dark .modal-overlay{background:rgba(0,0,0,.6)}
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   body{
@@ -58,6 +73,8 @@
   }
   h1,h2,h3{font-family:Fraunces,Georgia,serif;font-weight:600;line-height:1.12;margin:0}
   button{font-family:inherit;cursor:pointer}
+  a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+    outline:2px solid var(--primary);outline-offset:2px;border-radius:8px}
   input,select,textarea{font-family:inherit;font-size:16px;color:var(--ink)}
   a{color:inherit}
   ::selection{background:var(--primary-soft)}
@@ -92,6 +109,28 @@
     white-space:nowrap;
   }
   .nav button.active{background:var(--ink);color:var(--paper)}
+  /* hamburger */
+  .nav-more{display:inline-flex;flex-direction:column;justify-content:center;gap:4px;width:40px;height:36px;
+    border:0;background:transparent;border-radius:8px;cursor:pointer;padding:0 10px}
+  .nav-more span{display:block;height:2px;border-radius:2px;background:var(--ink);transition:.15s}
+  .nav-more:hover span{background:var(--primary)}
+  /* drawer laterale */
+  .drawer-overlay{position:fixed;inset:0;z-index:110;background:rgba(20,16,12,.5);opacity:0;pointer-events:none;transition:opacity .22s}
+  .drawer-overlay.show{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;top:0;left:0;bottom:0;z-index:111;width:260px;max-width:82vw;
+    background:var(--surface);border-right:1px solid var(--line);box-shadow:0 0 40px -8px rgba(0,0,0,.35);
+    transform:translateX(-100%);transition:transform .24s cubic-bezier(.2,.7,.2,1);
+    display:flex;flex-direction:column;padding:14px}
+  .drawer.open{transform:translateX(0)}
+  .drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+  .drawer-x{border:0;background:transparent;color:var(--muted);font-size:18px;cursor:pointer;width:34px;height:34px;border-radius:8px}
+  .drawer-x:hover{background:var(--primary-soft);color:var(--primary)}
+  .drawer-nav{display:flex;flex-direction:column;gap:3px}
+  .drawer-nav button{border:0;background:transparent;color:var(--ink);font:inherit;font-weight:600;font-size:15.5px;
+    text-align:left;padding:12px 14px;border-radius:10px;cursor:pointer}
+  .drawer-nav button:hover{background:var(--primary-soft)}
+  .drawer-nav button.active{background:var(--ink);color:var(--paper)}
+  body.drawer-lock{overflow:hidden}
 
   /* ---------- layout ---------- */
   main{max-width:var(--maxw);margin:0 auto;padding:22px 18px 80px}
@@ -456,6 +495,49 @@
   .modal textarea{width:100%;height:200px;margin-top:10px;font-family:"Space Mono",monospace;font-size:12px;
     border:1px solid var(--line-strong);border-radius:10px;padding:10px;background:var(--paper);color:var(--ink);resize:vertical}
   .modal-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  /* selettore ricetta con ricerca */
+  .modal.picker{max-width:520px;display:flex;flex-direction:column;max-height:88vh}
+  .picker-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+  .picker-search{margin-bottom:10px}
+  .picker-list{flex:1 1 auto;overflow:auto;min-height:140px;display:flex;flex-direction:column;gap:1px}
+  .pk-row{display:flex;align-items:center;justify-content:space-between;gap:10px;border:0;background:transparent;
+    text-align:left;padding:10px;border-radius:10px;cursor:pointer;border-bottom:1px solid var(--line)}
+  .pk-row:hover,.pk-row.on{background:var(--primary-soft)}
+  .pk-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .pk-name{font-weight:600}
+  .pk-sub{font-size:12px;color:var(--muted);font-family:"Space Mono",monospace}
+  .pk-check{flex:0 0 auto;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;
+    background:var(--surface);border:1px solid var(--line-strong);color:var(--primary);font-weight:700}
+  .pk-row.on .pk-check{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .picker-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+  .pk-port{font-size:13px;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+  .pk-port input{width:64px;padding:6px 8px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--ink)}
+
+  /* --- cosa cucino --- */
+  .pantry-box{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:16px 0 20px}
+  .pantry-inrow{display:flex;gap:8px;flex-wrap:wrap}
+  .pantry-inrow input{flex:1 1 220px;min-width:180px;padding:11px 14px;border:1px solid var(--line-strong);border-radius:11px;background:var(--paper);color:var(--ink)}
+  .pantry-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px;min-height:8px}
+  .pantry-chip{display:inline-flex;align-items:center;gap:5px;background:var(--primary-soft);border:1px solid var(--line);
+    border-radius:999px;padding:4px 6px 4px 12px;font-weight:600;font-size:13.5px}
+  .pantry-chip button{border:0;background:transparent;color:var(--muted);width:20px;height:20px;border-radius:50%;display:grid;place-items:center;cursor:pointer;line-height:0}
+  .pantry-chip button:hover{background:var(--primary);color:#fff}
+  .pantry-chip svg{width:12px;height:12px}
+  .pantry-tools{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;flex-wrap:wrap}
+  .pantry-toggle{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;cursor:pointer}
+  .cucino-sec{margin-bottom:22px}
+  .cucino-sec h2{margin-bottom:10px}
+  .cucino-list{display:flex;flex-direction:column;gap:6px}
+  .cucino-row{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;text-align:left;
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer}
+  .cucino-row:hover{border-color:var(--line-strong);background:var(--primary-soft)}
+  .cr-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .cr-name{font-weight:700}
+  .cr-sub{font-size:12px;color:var(--muted);font-family:"Space Mono",monospace}
+  .cr-miss{font-size:12.5px;color:var(--primary);margin-top:3px}
+  .cr-badge{flex:0 0 auto;min-width:34px;height:28px;padding:0 8px;border-radius:8px;display:grid;place-items:center;font-weight:700;font-family:"Space Mono",monospace;font-size:13px}
+  .cr-badge.ok{background:var(--bimby);color:#fff}
+  .cr-badge.miss{background:var(--primary-soft);color:var(--primary)}
   .backup-box{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
     background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:16px}
   .backup-box .bx-title{font-weight:700}
@@ -587,15 +669,33 @@
     <div class="bar-spacer"></div>
     <nav class="nav">
       <button id="navBrowse" class="active" onclick="App.go('browse')">Ricette</button>
-      <button id="navAdmin" onclick="App.newRecipe()">Gestione</button>
+      <button id="navAdmin" onclick="App.newRecipe()">+ Nuova</button>
       <button id="navSpesa" onclick="App.openSpesa()">Spesa</button>
-      <button id="navPiano" onclick="App.openPiano()">Piano</button>
-      <button id="navShare" onclick="App.openShare('export')">Scambia</button>
-      <button id="navOpzioni" onclick="App.go('opzioni')">Opzioni</button>
-      <button id="navInfo" onclick="App.go('info')">Info</button>
+      <button class="nav-more" onclick="openDrawer()" aria-label="Apri menu" title="Menu">
+        <span></span><span></span><span></span>
+      </button>
     </nav>
   </div>
 </header>
+
+<div id="drawerOverlay" class="drawer-overlay" onclick="closeDrawer()"></div>
+<aside id="drawer" class="drawer" aria-hidden="true">
+  <div class="drawer-head">
+    <div class="brand"><div class="mark">R</div><div><b>Ricettario</b></div></div>
+    <button class="drawer-x" onclick="closeDrawer()" aria-label="Chiudi menu">✕</button>
+  </div>
+  <nav class="drawer-nav">
+    <button data-view="browse"  onclick="drawerGo('browse')">Ricette</button>
+    <button data-view="cucino"  onclick="drawerGo('cucino')">Cosa cucino?</button>
+    <button data-view="admin"   onclick="drawerGo('admin')">Nuova ricetta</button>
+    <button data-view="spesa"   onclick="drawerGo('spesa')">Spesa</button>
+    <button data-view="piano"   onclick="drawerGo('piano')">Piano</button>
+    <button data-view="share"   onclick="drawerGo('share')">Scambia</button>
+    <button data-view="stats"   onclick="drawerGo('stats')">Statistiche</button>
+    <button data-view="opzioni" onclick="drawerGo('opzioni')">Opzioni</button>
+    <button data-view="info"    onclick="drawerGo('info')">Info</button>
+  </nav>
+</aside>
 
 <main id="app">
   <div class="loading"><div class="spin"></div><div>Carico le ricette…</div></div>
@@ -618,6 +718,7 @@ const RECENT_KEY = "ricettario_recenti_v1";
 const SPESA_KEY  = "ricettario_spesa_v1";
 const PIANO_KEY  = "ricettario_piano_v1";
 const PIANO_SPESA_KEY = "ricettario_piano_spesa_v1";
+const DISPENSA_KEY = "ricettario_dispensa_v1";
 const GIORNI=[["lun","Lunedì"],["mar","Martedì"],["mer","Mercoledì"],["gio","Giovedì"],["ven","Venerdì"],["sab","Sabato"],["dom","Domenica"]];
 const PASTI=[["colazione","Colazione"],["pranzo","Pranzo"],["cena","Cena"]];
 const BOZZA_KEY  = "ricettario_bozza_v1";
@@ -959,6 +1060,8 @@ const App = {
   spesa: [],           // lista della spesa: {n,u,q,checked,manual}
   plan: null,          // pianificazione settimanale: {lun:{colazione:[id],pranzo:[],cena:[]},...}
   planSpesa: [],       // lista della spesa generata dai pasti pianificati (separata)
+  pantry: [],          // "cosa cucino": ingredienti che ho in casa
+  pantryStaples: true, // ignora la dispensa base (sale, olio, acqua…)
   settings:{autoLeggi:false, tema:"chiaro", testo:"normale", ridotto:false, voceRate:1, cucinaAuto:false, cucinaAutoSec:20, ordine:"nome", backupReminder:true, lastBackup:0}, // preferenze
   spesaSel: null,      // Map id -> porzioni, per comporre la lista
   cookActive:false,    // modalità cucina attiva
@@ -978,6 +1081,7 @@ const App = {
     try{ this.spesa = JSON.parse(await Store.get(SPESA_KEY)) || []; }catch(e){ this.spesa=[]; }
     try{ this.plan = JSON.parse(await Store.get(PIANO_KEY)) || null; }catch(e){ this.plan=null; }
     try{ this.planSpesa = JSON.parse(await Store.get(PIANO_SPESA_KEY)) || []; }catch(e){ this.planSpesa=[]; }
+    try{ const d=JSON.parse(await Store.get(DISPENSA_KEY))||{}; this.pantry=Array.isArray(d.pantry)?d.pantry:[]; this.pantryStaples=d.staples!==false; }catch(e){ this.pantry=[]; this.pantryStaples=true; }
     this.ensurePlan();
     try{ this.settings = Object.assign({autoLeggi:false, tema:"chiaro", testo:"normale", ridotto:false, voceRate:1, cucinaAuto:false, cucinaAutoSec:20, ordine:"nome", backupReminder:true, lastBackup:0}, JSON.parse(await Store.get(IMPOST_KEY))||{}); }catch(e){ this.settings={autoLeggi:false, tema:"chiaro", testo:"normale", ridotto:false, voceRate:1, cucinaAuto:false, cucinaAutoSec:20, ordine:"nome", backupReminder:true, lastBackup:0}; }
     applyPrefs();
@@ -1018,6 +1122,8 @@ const App = {
   async saveSpesa(){ await Store.set(SPESA_KEY, JSON.stringify(this.spesa)); },
   async savePlan(){ await Store.set(PIANO_KEY, JSON.stringify(this.plan)); },
   async savePlanSpesa(){ await Store.set(PIANO_SPESA_KEY, JSON.stringify(this.planSpesa)); },
+  async savePantry(){ await Store.set(DISPENSA_KEY, JSON.stringify({pantry:this.pantry, staples:this.pantryStaples})); },
+  openCucino(){ this.go("cucino"); },
   ensurePlan(){ // garantisce la struttura settimanale completa
     if(!this.plan || typeof this.plan!=="object") this.plan={};
     GIORNI.forEach(([g])=>{
@@ -1034,13 +1140,14 @@ const App = {
     if(prev==="admin" && view!=="admin"){ cleanupEditorPhotos(); } // annullato: rimuovo le foto non salvate
     if(prev!=="detail" || view!=="detail") Speech.stop(); // fermo eventuale lettura in corso
     revokeUrls();
-    document.getElementById("navBrowse").classList.toggle("active", view==="browse");
-    document.getElementById("navAdmin").classList.toggle("active", view==="admin");
-    document.getElementById("navShare").classList.toggle("active", view==="share");
-    document.getElementById("navSpesa").classList.toggle("active", view==="spesa");
-    document.getElementById("navPiano").classList.toggle("active", view==="piano");
-    document.getElementById("navOpzioni").classList.toggle("active", view==="opzioni");
-    document.getElementById("navInfo").classList.toggle("active", view==="info");
+    const setActive=(id,on)=>{ const el=document.getElementById(id); if(el) el.classList.toggle("active", on); };
+    setActive("navBrowse", view==="browse");
+    setActive("navAdmin", view==="admin");
+    setActive("navSpesa", view==="spesa");
+    // stati attivi nel drawer (menu completo)
+    document.querySelectorAll(".drawer-nav [data-view]").forEach(b=>{
+      b.classList.toggle("active", b.getAttribute("data-view")===view);
+    });
     if(view==="browse") renderBrowse();
     else if(view==="detail") renderDetail();
     else if(view==="admin") renderAdmin();
@@ -1048,6 +1155,7 @@ const App = {
     else if(view==="spesa") renderSpesa();
     else if(view==="piano") renderPiano();
     else if(view==="stats") renderStats();
+    else if(view==="cucino") renderCucino();
     else if(view==="opzioni") renderOpzioni();
     else if(view==="info") renderInfo();
     window.scrollTo({top:0,behavior:"instant"in window?"instant":"auto"});
@@ -1276,6 +1384,7 @@ function renderBrowse(){
         <button class="chip bimby ${f.tipo==='bimby'?'on':''}" onclick="setTipo('bimby')">Bimby</button>
       </div>
       <div class="chips" style="margin-left:auto">
+        <button class="chip" onclick="App.go('cucino')" title="Trova ricette con gli ingredienti che hai">🍳 Cosa cucino?</button>
         <button class="chip" onclick="App.go('stats')" title="Statistiche d'uso del ricettario">📊 Statistiche</button>
         <button class="chip" onclick="App.openShare('export')" title="Esporta o importa ricette per scambiarle">↔ Scambia ricette</button>
       </div>
@@ -2130,11 +2239,7 @@ function renderSpesa(){
 
     <div class="spesa-add no-print">
       <div class="sa-row">
-        <select id="spRecipe" class="control">
-          ${App.recipes.length? App.recipes.map(r=>`<option value="${r.id}">${esc(r.nome)}</option>`).join("") : `<option value="">Nessuna ricetta</option>`}
-        </select>
-        <input id="spPort" class="control" type="number" min="1" max="50" value="4" aria-label="Porzioni">
-        <button class="btn primary" onclick="addRecipeToSpesaFromPicker()">Aggiungi</button>
+        <button class="btn primary" onclick="pickForSpesa()" ${App.recipes.length?'':'disabled'}>+ Aggiungi da una ricetta</button>
       </div>
       <div class="sa-row">
         <input id="spFree" class="control" placeholder="Aggiungi una voce libera (es. pane, 1 kg)" onkeydown="if(event.key==='Enter')addFreeItem()">
@@ -2198,8 +2303,6 @@ function renderPiano(){
   if(cleaned) App.savePlan();
 
   const app=document.getElementById("app");
-  const opts = App.recipes.slice().sort((a,b)=>a.nome.localeCompare(b.nome,'it'))
-    .map(r=>`<option value="${r.id}">${esc(r.nome)}</option>`).join("");
   const totalMeals = GIORNI.reduce((n,[g])=>n+PASTI.reduce((m,[p])=>m+App.plan[g][p].length,0),0);
 
   const dayCard=([g,gLabel])=>{
@@ -2215,9 +2318,7 @@ function renderPiano(){
         <div class="ps-lbl">${pLabel}</div>
         <div class="ps-body">
           ${chips||'<span class="ps-empty">—</span>'}
-          <select class="plan-add" aria-label="Aggiungi a ${pLabel} — ${gLabel}" onchange="planAdd('${g}','${p}',this.value);this.selectedIndex=0" ${App.recipes.length?'':'disabled'}>
-            <option value="">+ ricetta</option>${opts}
-          </select>
+          <button class="plan-add" onclick="pickForSlot('${g}','${p}')" ${App.recipes.length?'':'disabled'}>+ ricetta</button>
         </div>
       </div>`;
     }).join("");
@@ -2388,6 +2489,203 @@ function renderStats(){
       </div>
     </div>
   `;
+}
+
+/* ===================== Cosa cucino con quello che ho ===================== */
+const STAPLES=["sale","pepe","olio","acqua","zucchero"];
+function isStaple(nn){ return STAPLES.some(s=> nn===s || nn.startsWith(s+" ") || nn.endsWith(" "+s)); }
+function stemWord(w){ return (w.length>4 && /[aeiou]$/.test(w)) ? w.slice(0,-1) : w; }
+/* true se il termine "ho" copre l'ingrediente (tollerante a plurali e forme) */
+function termMatches(h, ingName){
+  const nn=normName(ingName);
+  if(!h||!nn) return false;
+  if(nn===h) return true;
+  const hwords=h.split(/[\s,]+/).filter(w=>w.length>=3);
+  const nwords=nn.split(/[\s,]+/).filter(w=>w.length>=3);
+  if(hwords.length>1 && nn.includes(h)) return true;   // frase multi-parola
+  const hs=hwords.map(stemWord), ns=nwords.map(stemWord);
+  for(const a of hs){ for(const b of ns){ if(a===b) return true; } } // match per parola (gestisce i plurali)
+  return false;
+}
+/* ingredienti mancanti di una ricetta rispetto alla dispensa */
+function recipeMissing(r, haveNorm, ignoreStaples){
+  const miss=[];
+  for(const ing of (r.ingredienti||[])){
+    const name=ing.n; if(!name) continue;
+    const nn=normName(name);
+    if(ignoreStaples && isStaple(nn)) continue;
+    let covered=false;
+    for(const h of haveNorm){ if(termMatches(h, name)){ covered=true; break; } }
+    if(!covered) miss.push(name);
+  }
+  return miss;
+}
+async function addPantry(term){
+  const t=(term||"").trim(); if(!t) return;
+  const nn=normName(t);
+  if(App.pantry.some(x=>normName(x)===nn)){ toast("Già in dispensa"); return; }
+  App.pantry.push(t); await App.savePantry(); renderCucino();
+}
+async function removePantry(term){
+  App.pantry=App.pantry.filter(x=>x!==term); await App.savePantry(); renderCucino();
+}
+async function clearPantry(){ App.pantry=[]; await App.savePantry(); renderCucino(); }
+async function toggleStaples(){ App.pantryStaples=!App.pantryStaples; await App.savePantry(); renderCucino(); }
+function addPantryFromInput(){
+  const el=document.getElementById("pantryInput"); if(!el) return;
+  const v=el.value.trim(); if(!v) return;
+  el.value=""; addPantry(v);
+}
+function renderCucino(){
+  const app=document.getElementById("app");
+  const have=App.pantry.slice();
+  const haveNorm=have.map(normName).filter(Boolean);
+  const ignore=App.pantryStaples!==false;
+
+  const known={}; App.recipes.forEach(r=>(r.ingredienti||[]).forEach(i=>{ const k=normName(i.n); if(k&&!known[k]) known[k]=i.n; }));
+  const suggest=Object.values(known).sort((a,b)=>a.localeCompare(b,'it'));
+
+  const scored=App.recipes.map(r=>({ r, missing:recipeMissing(r, haveNorm, ignore) }));
+  const makeable = have.length? scored.filter(x=>(x.r.ingredienti||[]).length>0 && x.missing.length===0)
+    .sort((a,b)=>a.r.nome.localeCompare(b.r.nome,'it')) : [];
+  const almost = have.length? scored.filter(x=>x.missing.length>0 && x.missing.length<=3)
+    .sort((a,b)=> a.missing.length-b.missing.length || a.r.nome.localeCompare(b.r.nome,'it')) : [];
+
+  const chips = have.length
+    ? have.map(t=>`<span class="pantry-chip">${esc(t)}<button onclick="removePantry('${jesc(t)}')" aria-label="Togli">${I.close}</button></span>`).join("")
+    : `<span class="hint">Aggiungi gli ingredienti che hai in casa per vedere cosa puoi cucinare.</span>`;
+
+  const card = x => `<button class="cucino-row" onclick="App.open('${x.r.id}')">
+      <span class="cr-main"><span class="cr-name">${esc(x.r.nome)}</span>
+        <span class="cr-sub">${esc(x.r.categoria||'')}${x.r.categoria?' · ':''}${x.r.tipo==='bimby'?'Bimby':'Classica'}</span>
+        ${x.missing.length?`<span class="cr-miss">Manca: ${x.missing.map(m=>esc(m)).join(", ")}</span>`:''}
+      </span>
+      ${x.missing.length?`<span class="cr-badge miss">−${x.missing.length}</span>`:`<span class="cr-badge ok">✓</span>`}
+    </button>`;
+
+  app.innerHTML=`
+    <button class="back no-print" onclick="App.go('browse')">${I.back} Torna al ricettario</button>
+    <h1 style="font-size:30px;margin-bottom:4px">Cosa cucino?</h1>
+    <p class="lead" style="margin-top:0">Dimmi cosa hai in casa: ti mostro cosa puoi fare ora e cosa ti manca poco.</p>
+
+    <div class="pantry-box">
+      <div class="pantry-inrow">
+        <input id="pantryInput" list="ingList" placeholder="Aggiungi un ingrediente…" autocomplete="off"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();addPantryFromInput();}">
+        <datalist id="ingList">${suggest.map(s=>`<option value="${esc(s)}"></option>`).join("")}</datalist>
+        <button class="btn" onclick="addPantryFromInput()">+ Aggiungi</button>
+      </div>
+      <div class="pantry-chips">${chips}</div>
+      <div class="pantry-tools">
+        <label class="pantry-toggle"><input type="checkbox" ${ignore?'checked':''} onchange="toggleStaples()"> Ignora dispensa base <span class="hint">(sale, olio, acqua…)</span></label>
+        ${have.length?`<button class="btn sm ghost" onclick="clearPantry()">Svuota</button>`:''}
+      </div>
+    </div>
+
+    ${!have.length? '' : `
+      <div class="cucino-sec">
+        <h2>Puoi fare ora <span class="hint">(${makeable.length})</span></h2>
+        ${makeable.length? `<div class="cucino-list">${makeable.map(card).join("")}</div>`
+          : `<p class="hint">Nessuna ricetta completa con questi ingredienti. Guarda “Ti manca poco” qui sotto.</p>`}
+      </div>
+      <div class="cucino-sec">
+        <h2>Ti manca poco <span class="hint">(${almost.length})</span></h2>
+        ${almost.length? `<div class="cucino-list">${almost.map(card).join("")}</div>`
+          : `<p class="hint">Niente a portata di 1-3 ingredienti.</p>`}
+      </div>
+    `}
+  `;
+}
+
+/* ===================== Menu a scomparsa (drawer) ===================== */
+function openDrawer(){
+  document.getElementById("drawer").classList.add("open");
+  document.getElementById("drawerOverlay").classList.add("show");
+  document.getElementById("drawer").setAttribute("aria-hidden","false");
+  document.body.classList.add("drawer-lock");
+  App._drawerOpen=true;
+}
+function closeDrawer(){
+  document.getElementById("drawer").classList.remove("open");
+  document.getElementById("drawerOverlay").classList.remove("show");
+  document.getElementById("drawer").setAttribute("aria-hidden","true");
+  document.body.classList.remove("drawer-lock");
+  App._drawerOpen=false;
+}
+function drawerGo(view){
+  closeDrawer();
+  if(view==="admin") App.newRecipe();
+  else if(view==="share") App.openShare("export");
+  else App.go(view);
+}
+
+/* ===================== Selettore ricetta con ricerca (resta aperto) ===================== */
+function openRecipePicker(opts){
+  if(!App.recipes.length){ toast("Nessuna ricetta disponibile"); return; }
+  const old=document.getElementById("recPicker"); if(old) old.remove();
+  const wrap=document.createElement("div"); wrap.id="recPicker"; wrap.className="modal-overlay";
+  wrap.innerHTML=`
+    <div class="modal picker">
+      <div class="picker-head">
+        <h2>${esc(opts.title||"Scegli ricetta")}</h2>
+        <button class="drawer-x" id="pkClose" aria-label="Chiudi">✕</button>
+      </div>
+      <div class="search picker-search">${I.search}<input id="pkSearch" type="search" placeholder="Cerca ricetta…" autocomplete="off"></div>
+      <div class="picker-list" id="pkList"></div>
+      <div class="picker-foot">${opts.footerHTML||'<span class="hint">Tocca per aggiungere · il menu resta aperto</span>'}<button class="btn primary" id="pkDone">Fatto</button></div>
+    </div>`;
+  document.body.appendChild(wrap);
+  const input=wrap.querySelector("#pkSearch"), listEl=wrap.querySelector("#pkList");
+  function draw(){
+    const q=input.value.trim();
+    let list=App.recipes.slice().sort((a,b)=>a.nome.localeCompare(b.nome,'it'));
+    if(q) list=smartSearch(q, list);
+    if(!list.length){ listEl.innerHTML='<div class="hint" style="padding:16px">Nessuna ricetta trovata.</div>'; return; }
+    listEl.innerHTML=list.map(r=>{
+      const on=opts.rowOn?opts.rowOn(r.id):false;
+      return `<button class="pk-row ${on?'on':''}" data-id="${r.id}">
+        <span class="pk-main"><span class="pk-name">${esc(r.nome)}</span>
+        <span class="pk-sub">${esc(r.categoria||'')}${r.categoria?' · ':''}${r.tipo==='bimby'?'Bimby':'Classica'}</span></span>
+        <span class="pk-check">${on?'✓':'+'}</span></button>`;
+    }).join("");
+  }
+  listEl.onclick=(e)=>{ const b=e.target.closest(".pk-row"); if(!b) return; Promise.resolve(opts.onPick(b.getAttribute("data-id"))).then(draw); };
+  input.oninput=draw;
+  const close=()=>{ wrap.remove(); if(opts.onClose) opts.onClose(); };
+  wrap.querySelector("#pkClose").onclick=close;
+  wrap.querySelector("#pkDone").onclick=close;
+  wrap.onclick=(e)=>{ if(e.target===wrap) close(); };
+  draw();
+  setTimeout(()=>{ try{ input.focus(); }catch(e){} }, 60);
+}
+/* Piano: aggiunge/toglie ricette da uno slot (multi, resta aperto) */
+function pickForSlot(g,p){
+  const gLabel=(GIORNI.find(x=>x[0]===g)||[])[1]||"";
+  const pLabel=(PASTI.find(x=>x[0]===p)||[])[1]||"";
+  openRecipePicker({
+    title:pLabel+" · "+gLabel,
+    rowOn: rid => App.plan[g][p].includes(rid),
+    onPick: rid => {
+      if(App.plan[g][p].includes(rid)) App.plan[g][p]=App.plan[g][p].filter(x=>x!==rid);
+      else App.plan[g][p].push(rid);
+      App.savePlan();
+    },
+    onClose: ()=>{ if(App.view==="piano") renderPiano(); }
+  });
+}
+/* Spesa: aggiunge gli ingredienti di una ricetta alle porzioni scelte (resta aperto) */
+function pickForSpesa(){
+  openRecipePicker({
+    title:"Aggiungi da una ricetta",
+    footerHTML:'<label class="pk-port">Porzioni <input id="pkPort" type="number" min="1" max="50" value="4"></label>',
+    onPick: async rid => {
+      const p=Math.max(1,parseInt((document.getElementById("pkPort")||{}).value)||4);
+      await addToSpesa(rid, p);
+      const r=App.find(rid);
+      toast("Aggiunta: "+(r?r.nome:"ricetta")+" ("+p+" porz.)");
+    },
+    onClose: ()=>{ if(App.view==="spesa") renderSpesa(); }
+  });
 }
 
 /* ===================== Opzioni ===================== */
@@ -2933,7 +3231,24 @@ document.addEventListener("deviceready", function(){
   App.cordovaReady = true;
   try{ Speech.init(); }catch(e){}         // eventuale plugin voce (window.TTS)
   if(App.view==="share"){ try{ renderShare(); }catch(e){} } // mostra le opzioni di backup native
+  // Tasto Indietro di Android: chiude ciò che è aperto invece di uscire subito
+  document.addEventListener("backbutton", function(e){
+    if(App._drawerOpen){ e.preventDefault&&e.preventDefault(); closeDrawer(); return; }
+    const pk=document.getElementById("recPicker"); if(pk){ e.preventDefault&&e.preventDefault(); pk.remove(); return; }
+    const m=document.getElementById("exportModal"); if(m){ e.preventDefault&&e.preventDefault(); m.remove(); return; }
+    if(App.cookActive){ e.preventDefault&&e.preventDefault(); endCook(); return; }
+    if(App.view && App.view!=="browse"){ e.preventDefault&&e.preventDefault(); App.go("browse"); return; }
+    if(navigator.app && navigator.app.exitApp) navigator.app.exitApp();
+  }, false);
 }, false);
+
+/* Esc chiude il menu o la modale (utile su desktop/PWA) */
+document.addEventListener("keydown", function(e){
+  if(e.key!=="Escape") return;
+  if(App._drawerOpen){ closeDrawer(); return; }
+  const pk=document.getElementById("recPicker"); if(pk){ pk.remove(); return; }
+  const m=document.getElementById("exportModal"); if(m){ m.remove(); }
+});
 </script>
 
 <!-- PWA: attiva manifest e service worker SOLO quando l'app è servita dal web (http/https).
