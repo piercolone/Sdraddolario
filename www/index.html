@@ -513,6 +513,16 @@
   .pk-port{font-size:13px;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
   .pk-port input{width:64px;padding:6px 8px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--ink)}
 
+  /* --- filtri: pulsante home + pannello --- */
+  .filter-btn{display:inline-flex;align-items:center;gap:6px}
+  .filter-btn.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .fb-count{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;
+    background:var(--primary);color:#fff;font-size:11px;font-weight:700}
+  .active-filters{font-size:13px;color:var(--muted);margin:-6px 0 16px}
+  .modal.filter-modal{max-width:520px;display:flex;flex-direction:column;max-height:88vh;overflow:auto}
+  .filter-group{margin-bottom:16px}
+  .fg-lbl{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+
   /* --- cosa cucino --- */
   .pantry-box{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:16px 0 20px}
   .pantry-inrow{display:flex;gap:8px;flex-wrap:wrap}
@@ -528,16 +538,19 @@
   .cucino-sec{margin-bottom:22px}
   .cucino-sec h2{margin-bottom:10px}
   .cucino-list{display:flex;flex-direction:column;gap:6px}
-  .cucino-row{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;text-align:left;
-    background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer}
-  .cucino-row:hover{border-color:var(--line-strong);background:var(--primary-soft)}
-  .cr-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .cucino-row{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:6px 10px 6px 6px}
+  .cr-open{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px;text-align:left;
+    background:transparent;border:0;cursor:pointer;padding:8px}
+  .cr-open:hover .cr-name{color:var(--primary)}
+  .cr-side{flex:0 0 auto;display:flex;align-items:center;gap:8px}
   .cr-name{font-weight:700}
   .cr-sub{font-size:12px;color:var(--muted);font-family:"Space Mono",monospace}
   .cr-miss{font-size:12.5px;color:var(--primary);margin-top:3px}
   .cr-badge{flex:0 0 auto;min-width:34px;height:28px;padding:0 8px;border-radius:8px;display:grid;place-items:center;font-weight:700;font-family:"Space Mono",monospace;font-size:13px}
   .cr-badge.ok{background:var(--bimby);color:#fff}
   .cr-badge.miss{background:var(--primary-soft);color:var(--primary)}
+  .add-miss{white-space:nowrap}
   .backup-box{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
     background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:16px}
   .backup-box .bx-title{font-weight:700}
@@ -599,6 +612,23 @@
     box-shadow:0 6px 16px -8px rgba(21,117,106,.8)}
   .cook-chip svg{width:18px;height:18px}
   .cook-hint{font-size:13px;color:var(--muted)}
+  /* timer di cottura */
+  .cook-timer{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:6px;padding:12px 14px;
+    border:1px solid var(--line);border-radius:14px;background:var(--surface);min-width:min(320px,86vw)}
+  .cook-timer.running{border-color:var(--primary)}
+  .ct-display{font-family:"Space Mono",monospace;font-size:38px;font-weight:700;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+  .cook-timer.running .ct-display{color:var(--primary)}
+  .ct-btns{display:flex;flex-wrap:wrap;gap:7px;justify-content:center}
+  .ct-b,.ct-set{border:1px solid var(--line-strong);background:var(--paper);color:var(--ink);font:inherit;font-weight:600;
+    font-size:13.5px;padding:8px 12px;border-radius:9px;cursor:pointer}
+  .ct-b:hover,.ct-set:hover{border-color:var(--primary);color:var(--primary)}
+  .ct-b.ghost{color:var(--muted)}
+  .ct-set{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .ct-set:hover{filter:brightness(1.05);color:#fff}
+  @keyframes ctRing{0%,100%{transform:scale(1)}30%{transform:scale(1.06)}}
+  @keyframes ctFlash{0%,100%{background:var(--surface)}50%{background:var(--primary-soft)}}
+  .cook-timer.ringing{animation:ctRing .5s ease-in-out 6, ctFlash .5s steps(1) 6;border-color:var(--primary)}
+  .cook-timer.ringing .ct-display{color:var(--primary)}
   .cook-nav{display:flex;align-items:center;gap:12px;padding:16px 20px 22px;max-width:640px;width:100%;margin:0 auto}
   .cook-btn{flex:1;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);
     font-weight:700;font-size:17px;padding:16px;border-radius:14px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px}
@@ -686,6 +716,7 @@
   </div>
   <nav class="drawer-nav">
     <button data-view="browse"  onclick="drawerGo('browse')">Ricette</button>
+    <button onclick="closeDrawer();openFilter()">Filtra ricette</button>
     <button data-view="cucino"  onclick="drawerGo('cucino')">Cosa cucino?</button>
     <button data-view="admin"   onclick="drawerGo('admin')">Nuova ricetta</button>
     <button data-view="spesa"   onclick="drawerGo('spesa')">Spesa</button>
@@ -710,6 +741,35 @@
 
 <script>
 "use strict";
+/* =====================================================================
+   RICETTARIO — app offline (classico + Bimby), file unico.
+   INDICE (cerca le intestazioni "===== NOME =====" per saltare):
+     · Archiviazione persistente      localStorage (ricette, impostazioni, piano, dispensa)
+     · Dati di esempio                primo avvio
+     · Utility                        helper vari (esc, id, plural, warn…)
+     · Foto: IndexedDB                salvataggio/compressione immagini
+     · Wake Lock                      schermo sempre acceso in cucina
+     · Lettura vocale                 SpeechSynthesis + plugin TTS
+     · Stato                          oggetto App (dati + init + router go())
+     · Icone                          SVG inline
+     · Utility: ricerca intelligente  ricerca tollerante ad accenti/refusi
+     · Utility: arrotondamento        dosi "belle" nella scalatura
+     · Render: Scheda ricetta         dettaglio, scalatura porzioni
+     · Valutazione e note             preferiti, stelle, note personali
+     · Modalità cucina                passo-passo a schermo intero
+     · Timer di cottura               countdown per passaggio + sveglia
+     · Render: Gestione (form)        creazione/modifica ricetta
+     · Salva variante porzioni
+     · Lista della spesa              somma ingredienti + selettore
+     · Pianificazione pasti           settimana + lista spesa dedicata
+     · Statistiche d'uso
+     · Cosa cucino con quello che ho  dispensa + mancanti alla spesa
+     · Menu a scomparsa (drawer)
+     · Selettore ricetta con ricerca  usato da Piano e Spesa
+     · Opzioni / Info
+     · Esportazione backup            persistente + condivisione nativa
+     · Toast / Scorciatoie / Avvio
+   ===================================================================== */
 
 /* ===================== Archiviazione persistente ===================== */
 /* Usa window.storage degli artifact; fallback in memoria se non disponibile. */
@@ -1255,6 +1315,7 @@ const App = {
 /* ===================== Icone (inline SVG) ===================== */
 const I = {
   search:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>',
+  filter:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg>',
   clock:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
   thermo:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 14.76V5a2 2 0 1 0-4 0v9.76a4 4 0 1 0 4 0z"/></svg>',
   speed:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 12 16 8"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg>',
@@ -1378,33 +1439,13 @@ function renderBrowse(){
       <div class="search">${I.search}
         <input id="q" type="search" placeholder="Cerca per nome, ingrediente o etichetta…" value="${esc(f.q)}" autocomplete="off">
       </div>
-      <div class="chips">
-        <button class="chip ${f.tipo==='all'?'on':''}" onclick="setTipo('all')">Tutte</button>
-        <button class="chip ${f.tipo==='classica'?'on':''}" onclick="setTipo('classica')">Classiche</button>
-        <button class="chip bimby ${f.tipo==='bimby'?'on':''}" onclick="setTipo('bimby')">Bimby</button>
-      </div>
-      <div class="chips" style="margin-left:auto">
-        <button class="chip" onclick="App.go('cucino')" title="Trova ricette con gli ingredienti che hai">🍳 Cosa cucino?</button>
-        <button class="chip" onclick="App.go('stats')" title="Statistiche d'uso del ricettario">📊 Statistiche</button>
-        <button class="chip" onclick="App.openShare('export')" title="Esporta o importa ricette per scambiarle">↔ Scambia ricette</button>
-      </div>
+      <button class="chip filter-btn ${activeFilterCount()?'on':''}" onclick="openFilter()" title="Filtra le ricette">
+        ${I.filter||''} Filtri${activeFilterCount()?` <span class="fb-count">${activeFilterCount()}</span>`:''}
+      </button>
+      ${activeFilterCount()?`<button class="chip" onclick="clearFilters()" title="Azzera i filtri">Azzera</button>`:''}
     </div>
 
-    <div class="chips" style="margin-bottom:12px">
-      <button class="chip ${f.vista==='tutte'?'on':''}" onclick="setVista('tutte')">Tutto il ricettario</button>
-      <button class="chip fav ${f.vista==='preferiti'?'on':''}" onclick="setVista('preferiti')">★ Preferiti${nFav?` (${nFav})`:''}</button>
-      <button class="chip ${f.vista==='recenti'?'on':''}" onclick="setVista('recenti')">Recenti${App.recents.length?` (${App.recents.length})`:''}</button>
-    </div>
-
-    <div class="chips" style="margin-bottom:${allTags.length?'12px':'20px'}">
-      ${cats.map(c=>`<button class="chip ${f.cat===c?'on':''}" onclick="setCat('${qattr(c)}')">${c==='all'?'Tutte le categorie':esc(c)}</button>`).join("")}
-    </div>
-
-    ${allTags.length?`<div class="chips" style="margin-bottom:20px">
-      <span class="chips-lbl">Etichette</span>
-      <button class="chip tagchip ${f.tag==='all'?'on':''}" onclick="setTag('all')">tutte</button>
-      ${allTags.map(t=>`<button class="chip tagchip ${f.tag===t?'on':''}" onclick="setTag('${qattr(t)}')">#${esc(t)}</button>`).join("")}
-    </div>`:""}
+    ${activeFilterCount()?`<div class="active-filters">${activeFiltersText()}</div>`:''}
 
     <div id="grid"></div>
   `;
@@ -1412,6 +1453,19 @@ function renderBrowse(){
 
   const qi=document.getElementById("q");
   qi.addEventListener("input",e=>{ f.q=e.target.value; clearTimeout(_bt); _bt=setTimeout(updateGrid,140); });
+}
+function activeFilterCount(){
+  const f=App.filters; let n=0;
+  if(f.tipo!=="all") n++; if(f.vista!=="tutte") n++; if(f.cat!=="all") n++; if(f.tag!=="all") n++;
+  return n;
+}
+function activeFiltersText(){
+  const f=App.filters, p=[];
+  if(f.tipo==="classica") p.push("Classiche"); if(f.tipo==="bimby") p.push("Bimby");
+  if(f.vista==="preferiti") p.push("Preferiti"); if(f.vista==="recenti") p.push("Recenti");
+  if(f.cat!=="all") p.push(esc(f.cat));
+  if(f.tag!=="all") p.push("#"+esc(f.tag));
+  return "Filtri attivi: "+p.join(" · ");
 }
 function computeList(f){
   let list=App.recipes.filter(r=>{
@@ -1452,10 +1506,57 @@ function emptyTitle(f){
   return "Nessuna ricetta qui";
 }
 let _bt;
-function setTipo(t){ App.filters.tipo=t; renderBrowse(); }
-function setCat(c){ App.filters.cat=c; renderBrowse(); }
-function setTag(t){ App.filters.tag=t; renderBrowse(); }
-function setVista(v){ App.filters.vista=v; renderBrowse(); }
+function setTipo(t){ App.filters.tipo=t; afterFilterChange(); }
+function setCat(c){ App.filters.cat=c; afterFilterChange(); }
+function setTag(t){ App.filters.tag=t; afterFilterChange(); }
+function setVista(v){ App.filters.vista=v; afterFilterChange(); }
+function clearFilters(){ App.filters.tipo="all"; App.filters.vista="tutte"; App.filters.cat="all"; App.filters.tag="all"; afterFilterChange(); }
+function afterFilterChange(){
+  if(document.getElementById("filterPanel")) renderFilterPanel();
+  if(App.view==="browse") renderBrowse();
+}
+function openFilter(){
+  if(App.view!=="browse"){ App.go("browse"); }
+  const old=document.getElementById("filterPanel"); if(old) old.remove();
+  const wrap=document.createElement("div"); wrap.id="filterPanel"; wrap.className="modal-overlay";
+  wrap.innerHTML=`<div class="modal filter-modal"><div class="picker-head"><h2>Filtra</h2>
+    <button class="drawer-x" onclick="closeFilter()" aria-label="Chiudi">✕</button></div>
+    <div id="filterBody"></div></div>`;
+  document.body.appendChild(wrap);
+  wrap.onclick=(e)=>{ if(e.target===wrap) closeFilter(); };
+  renderFilterPanel();
+}
+function closeFilter(){ const w=document.getElementById("filterPanel"); if(w) w.remove(); if(App.view==="browse") renderBrowse(); }
+function renderFilterPanel(){
+  const body=document.getElementById("filterBody"); if(!body) return;
+  const f=App.filters;
+  const cats=["all",...Array.from(new Set(App.recipes.map(r=>r.categoria))).sort()];
+  const allTags=Array.from(new Set(App.recipes.flatMap(r=>r.tags||[]))).sort();
+  const nFav=App.recipes.filter(r=>r.preferito).length;
+  const count=computeList(App.filters).length;
+  body.innerHTML=`
+    <div class="filter-group"><div class="fg-lbl">Tipo</div><div class="chips">
+      <button class="chip ${f.tipo==='all'?'on':''}" onclick="setTipo('all')">Tutte</button>
+      <button class="chip ${f.tipo==='classica'?'on':''}" onclick="setTipo('classica')">Classiche</button>
+      <button class="chip bimby ${f.tipo==='bimby'?'on':''}" onclick="setTipo('bimby')">Bimby</button>
+    </div></div>
+    <div class="filter-group"><div class="fg-lbl">Vista</div><div class="chips">
+      <button class="chip ${f.vista==='tutte'?'on':''}" onclick="setVista('tutte')">Tutto il ricettario</button>
+      <button class="chip fav ${f.vista==='preferiti'?'on':''}" onclick="setVista('preferiti')">★ Preferiti${nFav?` (${nFav})`:''}</button>
+      <button class="chip ${f.vista==='recenti'?'on':''}" onclick="setVista('recenti')">Recenti${App.recents.length?` (${App.recents.length})`:''}</button>
+    </div></div>
+    <div class="filter-group"><div class="fg-lbl">Categorie</div><div class="chips">
+      ${cats.map(c=>`<button class="chip ${f.cat===c?'on':''}" onclick="setCat('${qattr(c)}')">${c==='all'?'Tutte':esc(c)}</button>`).join("")}
+    </div></div>
+    ${allTags.length?`<div class="filter-group"><div class="fg-lbl">Etichette</div><div class="chips">
+      <button class="chip tagchip ${f.tag==='all'?'on':''}" onclick="setTag('all')">tutte</button>
+      ${allTags.map(t=>`<button class="chip tagchip ${f.tag===t?'on':''}" onclick="setTag('${qattr(t)}')">#${esc(t)}</button>`).join("")}
+    </div></div>`:""}
+    <div class="picker-foot">
+      <button class="btn sm ghost" onclick="clearFilters()">Azzera filtri</button>
+      <button class="btn primary" onclick="closeFilter()">Mostra ${count} ${plural(count,'ricetta','ricette')}</button>
+    </div>`;
+}
 
 function cardHTML(r){
   const isB=r.tipo==="bimby";
@@ -1676,6 +1777,7 @@ async function endCook(){
   App.cookActive=false;
   Speech.stop();
   clearTimeout(App._cookTimer);
+  CookTimer.stop();
   const el=document.getElementById("cook");
   el.classList.add("hidden"); el.setAttribute("aria-hidden","true"); el.innerHTML="";
   document.body.classList.remove("cooking");
@@ -1708,6 +1810,66 @@ function bindCookSwipe(){
     if(Math.abs(dx)>60 && Math.abs(dx)>Math.abs(dy)*1.5){ cookGo(dx<0?1:-1); }
     x0=y0=null;
   },{passive:true});
+}
+/* ===================== Timer di cottura (con sveglia) ===================== */
+function fmtSec(s){ s=Math.max(0,Math.round(s)); const m=Math.floor(s/60), ss=s%60; return m+":"+(ss<10?"0":"")+ss; }
+function parseTimeToSec(str){
+  if(!str) return 0;
+  const s=String(str).toLowerCase().trim();
+  let mm=s.match(/^(\d+):(\d{1,2})$/); if(mm) return parseInt(mm[1])*60+parseInt(mm[2]);
+  let sec=0, found=false, m;
+  if((m=s.match(/(\d+)\s*h/)))            { sec+=parseInt(m[1])*3600; found=true; }
+  if((m=s.match(/(\d+)\s*m(in|inuti)?\b/))){ sec+=parseInt(m[1])*60;   found=true; }
+  if((m=s.match(/(\d+)\s*s(ec|econdi)?\b/))){ sec+=parseInt(m[1]);     found=true; }
+  if(!found){ const n=parseInt(s); if(!isNaN(n)) sec=n*60; } // numero nudo = minuti
+  return sec;
+}
+function beepAlarm(){
+  try{
+    const Ctx=window.AudioContext||window.webkitAudioContext; if(!Ctx) return;
+    const ctx=new Ctx(); let t=ctx.currentTime;
+    for(let k=0;k<3;k++){
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.type="sine"; o.frequency.value=880; o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.3,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+0.35);
+      o.start(t); o.stop(t+0.37); t+=0.5;
+    }
+    setTimeout(()=>{ try{ ctx.close(); }catch(e){} }, 2200);
+  }catch(e){}
+}
+const CookTimer = {
+  total:0, remaining:0, running:false, _id:null,
+  set(sec){ this.stop(); this.total=sec; this.remaining=sec; this.render(); },
+  add(sec){ this.remaining=Math.max(0,this.remaining+sec); this.total=Math.max(this.total,this.remaining); this.render(); },
+  start(){ if(this.remaining<=0) return; this.running=true; clearInterval(this._id);
+    this._id=setInterval(()=>{ this.remaining--; if(this.remaining<=0){ this.remaining=0; this.finish(); } this.render(); },1000); this.render(); },
+  pause(){ this.running=false; clearInterval(this._id); this._id=null; this.render(); },
+  toggle(){ this.running? this.pause() : this.start(); },
+  reset(){ this.stop(); this.remaining=0; this.total=0; const w=document.getElementById("cookTimer"); if(w) w.classList.remove("ringing"); this.render(); },
+  stop(){ this.running=false; clearInterval(this._id); this._id=null; },
+  finish(){ this.stop(); beepAlarm(); try{ navigator.vibrate && navigator.vibrate([300,150,300,150,500]); }catch(e){}
+    toast("⏰ Timer finito!"); const w=document.getElementById("cookTimer"); if(w) w.classList.add("ringing"); },
+  fmt(){ return fmtSec(this.remaining); },
+  render(){
+    const d=document.getElementById("ctDisplay"); if(d) d.textContent=this.fmt();
+    const b=document.getElementById("ctToggle"); if(b) b.textContent=this.running?"Pausa":"Avvia";
+    const w=document.getElementById("cookTimer"); if(w){ w.classList.toggle("running",this.running); if(this.remaining>0) w.classList.remove("ringing"); }
+  }
+};
+
+function cookTimerHTML(p){
+  const stepSec = p && p.bimby ? parseTimeToSec(p.bimby.tempo) : 0;
+  const setBtn = stepSec ? `<button class="ct-set" onclick="CookTimer.set(${stepSec});CookTimer.start();">▶ Avvia ${fmtSec(stepSec)}</button>` : "";
+  return `<div class="cook-timer" id="cookTimer">
+    <div class="ct-display" id="ctDisplay">${CookTimer.fmt()}</div>
+    <div class="ct-btns">
+      ${setBtn}
+      <button class="ct-b" onclick="CookTimer.add(60)">+1:00</button>
+      <button class="ct-b" onclick="CookTimer.add(30)">+0:30</button>
+      <button class="ct-b" id="ctToggle" onclick="CookTimer.toggle()">${CookTimer.running?"Pausa":"Avvia"}</button>
+      <button class="ct-b ghost" onclick="CookTimer.reset()">Azzera</button>
+    </div>
+  </div>`;
 }
 function renderCook(){
   const r=App.find(App.currentId); if(!r){ endCook(); return; }
@@ -1747,7 +1909,8 @@ function renderCook(){
       <div class="cook-count">Passaggio ${i+1} di ${n}</div>
       <div class="cook-text">${esc(p.testo)}</div>
       ${bimby}
-      <div class="cook-hint">${isLast?'Ultimo passaggio':'Tocca per continuare · scorri o usa le frecce'}</div>
+      ${cookTimerHTML(p)}
+      <div class="cook-hint">${isLast?'Ultimo passaggio':'Tocca il testo per continuare · scorri o usa le frecce'}</div>
     </div>
 
     <div class="cook-nav">
@@ -1768,9 +1931,9 @@ function renderCook(){
       }).join("")}</ul>
     </div>
   `;
-  // tap sullo stage per avanzare (esclusi i controlli)
-  const stage=document.getElementById("cookStage");
-  stage.onclick=()=>{ if(!isLast) cookGo(1); };
+  // tap sul testo per avanzare (i controlli del timer non fanno avanzare)
+  const txt=el.querySelector(".cook-text");
+  if(txt) txt.onclick=()=>{ if(!isLast) cookGo(1); };
   // lettura automatica del passaggio, se attiva
   if(App.settings.autoLeggi && Speech.supported()){ Speech.speak(stepSpeakText(p)); }
   // avanzamento automatico, se attivo
@@ -2520,6 +2683,19 @@ function recipeMissing(r, haveNorm, ignoreStaples){
   }
   return miss;
 }
+/* quanti ingredienti (non base) sono coperti e quali mancano */
+function recipeCoverage(r, haveNorm, ignoreStaples){
+  let covered=0; const missing=[];
+  for(const ing of (r.ingredienti||[])){
+    const name=ing.n; if(!name) continue;
+    const nn=normName(name);
+    if(ignoreStaples && isStaple(nn)) continue;
+    let ok=false;
+    for(const h of haveNorm){ if(termMatches(h, name)){ ok=true; break; } }
+    if(ok) covered++; else missing.push(name);
+  }
+  return {covered, missing};
+}
 async function addPantry(term){
   const t=(term||"").trim(); if(!t) return;
   const nn=normName(t);
@@ -2531,6 +2707,25 @@ async function removePantry(term){
 }
 async function clearPantry(){ App.pantry=[]; await App.savePantry(); renderCucino(); }
 async function toggleStaples(){ App.pantryStaples=!App.pantryStaples; await App.savePantry(); renderCucino(); }
+async function addMissingToSpesa(rid){
+  const r=App.find(rid); if(!r) return;
+  const haveNorm=App.pantry.map(normName).filter(Boolean);
+  const ignore=App.pantryStaples!==false;
+  const missSet=new Set(recipeMissing(r, haveNorm, ignore).map(normName));
+  if(!missSet.size){ toast("Niente da aggiungere"); return; }
+  let added=0;
+  (r.ingredienti||[]).forEach(i=>{
+    if(!missSet.has(normName(i.n))) return;
+    const q = (i.q==null||i.q==="") ? null : (parseFloat(i.q)||0);   // dose base della ricetta
+    const key = normName(i.n)+"|"+normName(i.u||"");
+    const ex = App.spesa.find(s=>s.key===key);
+    if(ex){ if(ex.q!=null && q!=null) ex.q=Math.round((ex.q+q)*100)/100; if(!ex.from.includes(r.nome)) ex.from.push(r.nome); ex.checked=false; }
+    else { App.spesa.push({key, n:i.n, u:i.u||"", q, checked:false, from:[r.nome]}); }
+    added++;
+  });
+  await App.saveSpesa();
+  toast(added+" "+plural(added,'ingrediente aggiunto','ingredienti aggiunti')+" alla spesa");
+}
 function addPantryFromInput(){
   const el=document.getElementById("pantryInput"); if(!el) return;
   const v=el.value.trim(); if(!v) return;
@@ -2545,23 +2740,29 @@ function renderCucino(){
   const known={}; App.recipes.forEach(r=>(r.ingredienti||[]).forEach(i=>{ const k=normName(i.n); if(k&&!known[k]) known[k]=i.n; }));
   const suggest=Object.values(known).sort((a,b)=>a.localeCompare(b,'it'));
 
-  const scored=App.recipes.map(r=>({ r, missing:recipeMissing(r, haveNorm, ignore) }));
-  const makeable = have.length? scored.filter(x=>(x.r.ingredienti||[]).length>0 && x.missing.length===0)
+  const scored=App.recipes.map(r=>{ const c=recipeCoverage(r, haveNorm, ignore); return { r, missing:c.missing, covered:c.covered }; });
+  const makeable = have.length? scored.filter(x=>(x.r.ingredienti||[]).length>0 && x.covered>0 && x.missing.length===0)
     .sort((a,b)=>a.r.nome.localeCompare(b.r.nome,'it')) : [];
-  const almost = have.length? scored.filter(x=>x.missing.length>0 && x.missing.length<=3)
-    .sort((a,b)=> a.missing.length-b.missing.length || a.r.nome.localeCompare(b.r.nome,'it')) : [];
+  const partialAll = have.length? scored.filter(x=>x.covered>0 && x.missing.length>0)
+    .sort((a,b)=> a.missing.length-b.missing.length || b.covered-a.covered || a.r.nome.localeCompare(b.r.nome,'it')) : [];
+  const partial = partialAll.slice(0,50);
 
   const chips = have.length
     ? have.map(t=>`<span class="pantry-chip">${esc(t)}<button onclick="removePantry('${jesc(t)}')" aria-label="Togli">${I.close}</button></span>`).join("")
     : `<span class="hint">Aggiungi gli ingredienti che hai in casa per vedere cosa puoi cucinare.</span>`;
 
-  const card = x => `<button class="cucino-row" onclick="App.open('${x.r.id}')">
-      <span class="cr-main"><span class="cr-name">${esc(x.r.nome)}</span>
-        <span class="cr-sub">${esc(x.r.categoria||'')}${x.r.categoria?' · ':''}${x.r.tipo==='bimby'?'Bimby':'Classica'}</span>
-        ${x.missing.length?`<span class="cr-miss">Manca: ${x.missing.map(m=>esc(m)).join(", ")}</span>`:''}
-      </span>
-      ${x.missing.length?`<span class="cr-badge miss">−${x.missing.length}</span>`:`<span class="cr-badge ok">✓</span>`}
-    </button>`;
+  const card = x => {
+    const open = `<button class="cr-open" onclick="App.open('${x.r.id}')">
+        <span class="cr-name">${esc(x.r.nome)}</span>
+        <span class="cr-sub">${esc(x.r.categoria||'')}${x.r.categoria?' · ':''}${x.r.tipo==='bimby'?'Bimby':'Classica'} · hai ${x.covered}${x.missing.length?` · manca ${x.missing.length}`:''}</span>
+        ${x.missing.length?`<span class="cr-miss">Manca: ${x.missing.slice(0,4).map(m=>esc(m)).join(", ")}${x.missing.length>4?` +${x.missing.length-4}`:""}</span>`:''}
+      </button>`;
+    const side = x.missing.length
+      ? `<span class="cr-badge miss">−${x.missing.length}</span>
+         <button class="btn sm add-miss no-print" onclick="addMissingToSpesa('${x.r.id}')" title="Aggiungi i mancanti alla lista della spesa">+ Spesa</button>`
+      : `<span class="cr-badge ok">✓</span>`;
+    return `<div class="cucino-row">${open}<div class="cr-side">${side}</div></div>`;
+  };
 
   app.innerHTML=`
     <button class="back no-print" onclick="App.go('browse')">${I.back} Torna al ricettario</button>
@@ -2586,12 +2787,12 @@ function renderCucino(){
       <div class="cucino-sec">
         <h2>Puoi fare ora <span class="hint">(${makeable.length})</span></h2>
         ${makeable.length? `<div class="cucino-list">${makeable.map(card).join("")}</div>`
-          : `<p class="hint">Nessuna ricetta completa con questi ingredienti. Guarda “Ti manca poco” qui sotto.</p>`}
+          : `<p class="hint">Nessuna ricetta completa con questi ingredienti. Guarda qui sotto quelle che li usano.</p>`}
       </div>
       <div class="cucino-sec">
-        <h2>Ti manca poco <span class="hint">(${almost.length})</span></h2>
-        ${almost.length? `<div class="cucino-list">${almost.map(card).join("")}</div>`
-          : `<p class="hint">Niente a portata di 1-3 ingredienti.</p>`}
+        <h2>Con i tuoi ingredienti <span class="hint">(${partialAll.length})</span></h2>
+        ${partial.length? `<div class="cucino-list">${partial.map(card).join("")}</div>${partialAll.length>partial.length?`<p class="hint" style="margin-top:8px">…e altre ${partialAll.length-partial.length}. Aggiungi più ingredienti per restringere.</p>`:''}`
+          : `<p class="hint">Nessuna ricetta usa questi ingredienti. Prova ad aggiungerne altri.</p>`}
       </div>
     `}
   `;
@@ -3235,6 +3436,7 @@ document.addEventListener("deviceready", function(){
   document.addEventListener("backbutton", function(e){
     if(App._drawerOpen){ e.preventDefault&&e.preventDefault(); closeDrawer(); return; }
     const pk=document.getElementById("recPicker"); if(pk){ e.preventDefault&&e.preventDefault(); pk.remove(); return; }
+    const fp=document.getElementById("filterPanel"); if(fp){ e.preventDefault&&e.preventDefault(); closeFilter(); return; }
     const m=document.getElementById("exportModal"); if(m){ e.preventDefault&&e.preventDefault(); m.remove(); return; }
     if(App.cookActive){ e.preventDefault&&e.preventDefault(); endCook(); return; }
     if(App.view && App.view!=="browse"){ e.preventDefault&&e.preventDefault(); App.go("browse"); return; }
@@ -3247,6 +3449,7 @@ document.addEventListener("keydown", function(e){
   if(e.key!=="Escape") return;
   if(App._drawerOpen){ closeDrawer(); return; }
   const pk=document.getElementById("recPicker"); if(pk){ pk.remove(); return; }
+  const fp=document.getElementById("filterPanel"); if(fp){ closeFilter(); return; }
   const m=document.getElementById("exportModal"); if(m){ m.remove(); }
 });
 </script>
